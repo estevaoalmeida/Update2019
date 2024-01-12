@@ -7,7 +7,7 @@
     "modalidadeFrete": 0,
     "indicadorPresencaComprador": 1,
     "indicaConsumidorFinal": 0,
-    "naturezaOperacao": "VENDA DE MERCADORIA ADQUIR. DE TERCEIROS",
+    "naturezaOperacao": " VENDA DE MERCADORIA ADQUIR. DE TERCEIROS",
     "itens": [
       {
         "idProduto": "6516c774cc008d62313263f2",
@@ -393,7 +393,7 @@
         "identificadorTef": null,
         "codigoAdministrativoTef": null,
         "numeroAutorizacao": null,
-        "valor": 128.56,
+        "valor": 128.55544,
         "troco": 0,
         "idPix": null,
         "descontoAcrescimoCondicao": 0,
