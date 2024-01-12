@@ -1,18 +1,18 @@
 {
     "tipoDestinatario": "CLIENTE",
     "status": "PENDENTE",
-    "dataHora": "2024-01-12T17:50:29.437Z",
+    "dataHora": "2024-01-12T15:56:03.27-03:00",
     "finalidade": 1,
     "tipoOperacao": 1,
     "modalidadeFrete": 0,
     "indicadorPresencaComprador": 1,
     "indicaConsumidorFinal": 0,
-    "naturezaOperacao": " VENDA DE MERCADORIA ADQUIR. DE TERCEIROS",
+    "naturezaOperacao": "VENDA DE MERCADORIA ADQUIR. DE TERCEIROS",
     "itens": [
       {
-        "idProduto": "6516c774cc008d62313263f2",
+        "idProduto": "65259b5f652463eed5a44e14",
         "item": 1,
-        "descricaoProdutoAlterada": "CAMISETA MASCULINA AZUL MARINHO 19 4024 KYLY 10",
+        "descricaoProdutoAlterada": "CAMISETA MASCULINA AZUL MARINHO 19 4024 KYLY 10 (CÓPIA)",
         "descricaoAdicional": null,
         "codigoNve": null,
         "indicadorEscala": 0,
@@ -23,7 +23,7 @@
         "codigoEanTributado": null,
         "unidadeMedidaTributada": "PC",
         "quantidadeTributada": 1,
-        "valorUnitarioTributado": 128.55544,
+        "valorUnitarioTributado": 320,
         "incideTotal": 1,
         "numeroPedidoCompra": 0,
         "codigoPedidoCompra": null,
@@ -42,10 +42,10 @@
         "idConfiguracaoTributaria": "5fbffe48de093c166cfd7ae2",
         "dadosImportacao": {
           "numeroDi": null,
-          "dataRegistroDi": "0001-01-01T00:00:00Z",
+          "dataRegistroDi": "0001-01-01T00:00:00",
           "localDesembaraco": null,
           "ufDesembaracoAduaneiro": null,
-          "dataDesembaracoAduaneiro": "0001-01-01T00:00:00Z",
+          "dataDesembaracoAduaneiro": "0001-01-01T00:00:00",
           "tipoViaTransporte": 1,
           "valorAfrmm": 0,
           "tipoIntermedio": 1,
@@ -124,39 +124,35 @@
         "pesoBrutoVolume": 0,
         "numeroSerie": null,
         "naoSomarNoFaturamento": false,
-        "produto": null,
-        "inProduto": {
-          "descricao": "CAMISETA MASCULINA AZUL MARINHO 19 4024 KYLY 10",
-          "codigo": "2760",
+        "produto": {
+          "_id": "65259b5f652463eed5a44e14",
+          "codigo": "2761",
           "codigoIdentificador": null,
-          "servico": false,
-          "utilizaControleValidade": false,
-          "nomeFluxoCaixa": "DIVERSOS",
-          "tipoFluxoCaixa": null,
+          "ativo": true,
           "codigosBarras": [
             {
-              "codigo": "7909886271012",
+              "codigo": "2761",
               "descricao": "COD BARRAS",
               "valorUnitarioVariavel": 0,
-              "qtdCustomizada": 0
-            },
-            {
-              "codigo": "7909886271010",
-              "descricao": "teste",
-              "valorUnitarioVariavel": 100,
               "qtdCustomizada": 0
             }
           ],
           "referencias": [
             {
-              "ref": "81650-6826-10",
+              "ref": "2761",
+              "descricao": "REFERÊNCIA",
+              "idFornecedor": null,
+              "inFornecedor": null
+            },
+            {
+              "ref": "2761",
               "descricao": "COD FORNECEDOR",
-              "idFornecedor": "606f164c2c63df12384a3765",
+              "idFornecedor": "650467d2c81c13df18c0d371",
               "inFornecedor": {
-                "nomeRazaoSocial": "KYLY INDUSTRIA TEXTIL LTDA",
-                "apelidoNomeFantasia": "KYLY INDUSTRIA TEXTIL LTDA",
-                "cpfCnpj": "78855830000198",
-                "rgIe": "251203093",
+                "nomeRazaoSocial": "ELITE COMERCIO DE AREIA LTDA",
+                "apelidoNomeFantasia": "ARGAMASSA RAMOS",
+                "cpfCnpj": "11408746000155",
+                "rgIe": "0430156340",
                 "identificadorIntermediario": null,
                 "inEmpresaCadastro": {
                   "razaoSocial": "EMPRESA ESTEVAO ALMEIDA AMBIENTE DE HOMOLOGACAO",
@@ -171,13 +167,353 @@
               }
             },
             {
-              "ref": "81650-6826-10",
+              "ref": "2761",
+              "descricao": "COD FORNECEDOR",
+              "idFornecedor": "64ee374d3235c073fc62c78a",
+              "inFornecedor": {
+                "nomeRazaoSocial": "TNT MERCURIO CARGAS E ENCOMENDAS",
+                "apelidoNomeFantasia": "",
+                "cpfCnpj": "95591723005188",
+                "rgIe": "251767795",
+                "identificadorIntermediario": null,
+                "inEmpresaCadastro": {
+                  "razaoSocial": "EMPRESA ESTEVAO ALMEIDA AMBIENTE DE HOMOLOGACAO",
+                  "nomeFantasia": "EMPRESA ESTEVAO ALMEIDA AMBIENTE DE HOMOLOGACAO"
+                },
+                "inGrupoFornecedor": {
+                  "descricao": "GERAL",
+                  "nomeFluxoCaixa": "LUCRO LÍQUIDO",
+                  "tipoFluxoCaixa": "ANALÍTICA"
+                },
+                "inPlanoContas": null
+              }
+            }
+          ],
+          "idUnidadeMedida": "5ff493d69eb7ea135cd4bc52",
+          "idGrupoProduto": "606cc022dd92d911482516d3",
+          "idGrupoPreco": null,
+          "idSubgrupoProduto": "5fbffe47de093c166cfd7ad7",
+          "idMarca": "65381ff50e4a753147ad079d",
+          "idFornecedorAtual": "650467d2c81c13df18c0d371",
+          "idRegraFidelidade": null,
+          "descricao": "CAMISETA MASCULINA AZUL MARINHO 19 4024 KYLY 10 (CÓPIA)",
+          "descricaoAdicional": "Descrição adicional do produto",
+          "custoTotal": 128,
+          "descontoMaximo": 0,
+          "tipoProduto": null,
+          "markupPor": "TABELA DE PREÇO",
+          "tipoDurabilidade": null,
+          "durabilidade": 0,
+          "duracaoGarantia": 0,
+          "tipoComissao": "VENDEDOR",
+          "percentualComissao": 0,
+          "vendaEmMultiplo": 0,
+          "vendaValorAtacado": 0,
+          "utilizaControleValidade": false,
+          "servico": false,
+          "naoExportarMinhasVendas": false,
+          "naoExportarIpdv": false,
+          "idNcm": "5c5bfc7348269d14c1c47e19",
+          "cest": null,
+          "idCfop": null,
+          "idCfopSpedCompra": "6001e97b5716bf0e44d53103",
+          "mvaST": 0,
+          "aliquotaIcmsEfetivo": 0,
+          "baseIcmsEfetivo": 0,
+          "numeroFCI": null,
+          "codigoBeneficioFiscal": null,
+          "dadosIpi": null,
+          "configuracoesTributarias": [
+            {
+              "idEmpresa": "5fbffe47de093c166cfd7adf",
+              "idConfiguracaoTributaria": "5fbffe48de093c166cfd7ae2",
+              "inEmpresa": {
+                "razaoSocial": "EMPRESA ESTEVAO ALMEIDA AMBIENTE DE HOMOLOGACAO",
+                "nomeFantasia": "EMPRESA ESTEVAO ALMEIDA AMBIENTE DE HOMOLOGACAO"
+              },
+              "inConfiguracaoTributaria": {
+                "descricao": "CONFIGURAÇÃO TRIBUTÁRIA PADRÃO",
+                "padrao": true,
+                "inCfop": {
+                  "codigo": "5.102",
+                  "naturezaOperacao": "VENDA DE MERCADORIA ADQUIR. DE TERCEIROS",
+                  "aliquotaDarf": 0,
+                  "bonificacao": false,
+                  "naoSomarNoFaturamento": false,
+                  "inCfopInter": null,
+                  "inCfopCompra": null,
+                  "inCfopSped": null
+                },
+                "inIcmsContribuinte": {
+                  "descricao": "CSOSN 102 SIMPLES NACIONAL",
+                  "icmsPorUf": [
+                    {
+                      "idIcms": "6453c52bd4611851f113d44c",
+                      "idIcmsIntra": null,
+                      "uf": "SC",
+                      "inIcms": {
+                        "descricao": "Teste2",
+                        "icmsPorUf": [],
+                        "aliquota": 0,
+                        "diferimento": 0
+                      },
+                      "inIcmsIntra": null
+                    }
+                  ],
+                  "aliquota": 0,
+                  "diferimento": 0
+                },
+                "inIcmsNaoContribuinte": {
+                  "descricao": "CSOSN 102 SIMPLES NACIONAL",
+                  "icmsPorUf": [
+                    {
+                      "idIcms": "6453c52bd4611851f113d44c",
+                      "idIcmsIntra": null,
+                      "uf": "SC",
+                      "inIcms": {
+                        "descricao": "Teste2",
+                        "icmsPorUf": [],
+                        "aliquota": 0,
+                        "diferimento": 0
+                      },
+                      "inIcmsIntra": null
+                    }
+                  ],
+                  "aliquota": 0,
+                  "diferimento": 0
+                },
+                "inIcmsConsumidorFinal": {
+                  "descricao": "CSOSN 102 SIMPLES NACIONAL",
+                  "icmsPorUf": [
+                    {
+                      "idIcms": "6453c52bd4611851f113d44c",
+                      "idIcmsIntra": null,
+                      "uf": "SC",
+                      "inIcms": {
+                        "descricao": "Teste2",
+                        "icmsPorUf": [],
+                        "aliquota": 0,
+                        "diferimento": 0
+                      },
+                      "inIcmsIntra": null
+                    }
+                  ],
+                  "aliquota": 0,
+                  "diferimento": 0
+                },
+                "inIpi": {
+                  "descricao": "CST 99 SIMPLES NACIONAL",
+                  "aliquota": 0,
+                  "cst": "99"
+                },
+                "inPis": {
+                  "descricao": "CST 04 SIMPLES NACIONAL",
+                  "aliquota": 0,
+                  "cst": "04"
+                },
+                "inCofins": {
+                  "descricao": "CST 04 SIMPLES NACIONAL",
+                  "aliquota": 0,
+                  "cst": "04"
+                },
+                "inImpostoImportacao": {
+                  "descricao": "IMPOSTO DE IMPORTAÇÃO"
+                },
+                "inIss": {
+                  "descricao": "IMPOSTO SOBRE SERVIÇOS"
+                }
+              }
+            }
+          ],
+          "dataUltimaCompra": "2023-10-26T16:42:46.119Z",
+          "dataPenultimaCompra": "2023-10-18T13:35:30.232Z",
+          "custoSemImpostos": 128,
+          "custoSemImpostosRegimeNormal": 128,
+          "valorOutrasDespesas": 0,
+          "valorDesconto": 0,
+          "valorFrete": 0,
+          "valorIcms": 0,
+          "valorST": 0,
+          "valorFcp": 0,
+          "valorIpi": 0,
+          "valorPis": 0,
+          "valorCofins": 0,
+          "diferencaIcms": 0,
+          "baseCalculoIcmsRetido": 0,
+          "valorIcmsStRetido": 0,
+          "valorBaseCalculoStDestinatario": 0,
+          "valorIcmsStDestinatario": 0,
+          "cfopSpedCompra": "5656",
+          "valorCustosDiversos": 0,
+          "valorCustoMedio": 128,
+          "descricaoHtmlWeb": null,
+          "avisoAoUsuario": null,
+          "dadosTecnicos": "Dados Tecnicos do produto",
+          "aplicacoes": "Camiseta masculina azul é sua utilização como uma peça de vestuário casual e elegante para diversas ocasiões. A tonalidade azul é conhecida por sua capacidade de se adaptar a uma ampla gama de combinações de roupas, tornando-a uma escolha ideal para o dia a dia. ",
+          "dadosExtras": " Combinada com jeans para um visual descontraído ou com calças de alfaiataria para um toque mais sofisticado, a camiseta azul pode ser usada no escritório, em um encontro informal ou em um passeio relaxante, proporcionando conforto e estilo ao mesmo tempo. Seu apelo universal e versatilidade a tornam um item indispensável no guarda-roupa masculino.",
+          "numeroDi": null,
+          "numeroCA": null,
+          "validadeCA": "0001-01-02T00:00:00Z",
+          "dimensao": null,
+          "dadosBalanca": null,
+          "dadosCombustivel": null,
+          "dadosMedicamento": null,
+          "dadosServico": [],
+          "estoquesDoProduto": [
+            {
+              "idEmpresa": "5fbffe47de093c166cfd7adf",
+              "idLocalizacaoEstoque": "5fbffe46de093c166cfd7ace",
+              "quantidade": 58,
+              "quantidadeMinima": 0,
+              "quantidadeIdeal": 0,
+              "identificadorEstoque": null,
+              "lotes": null,
+              "idProduto": null,
+              "inEmpresa": {
+                "razaoSocial": "EMPRESA ESTEVAO ALMEIDA AMBIENTE DE HOMOLOGACAO",
+                "nomeFantasia": "EMPRESA ESTEVAO ALMEIDA AMBIENTE DE HOMOLOGACAO"
+              },
+              "inLocalizacaoEstoque": {
+                "descricao": "ESTOQUE GERAL",
+                "ativo": true
+              }
+            },
+            {
+              "idEmpresa": "5fbffe47de093c166cfd7adf",
+              "idLocalizacaoEstoque": "63ef72476d7f39473b147805",
+              "quantidade": -50,
+              "quantidadeMinima": 0,
+              "quantidadeIdeal": 0,
+              "identificadorEstoque": null,
+              "lotes": null,
+              "idProduto": null,
+              "inEmpresa": {
+                "razaoSocial": "EMPRESA ESTEVAO ALMEIDA AMBIENTE DE HOMOLOGACAO",
+                "nomeFantasia": "EMPRESA ESTEVAO ALMEIDA AMBIENTE DE HOMOLOGACAO"
+              },
+              "inLocalizacaoEstoque": {
+                "descricao": "ESTOQUE DANIFICADO",
+                "ativo": true
+              }
+            }
+          ],
+          "precos": [
+            {
+              "descricaoTabelaPreco": "TABELA PADRÃO",
+              "idTabelaPreco": "5fbffe47de093c166cfd7ad8",
+              "descontoMaximo": 0,
+              "markup": 150,
+              "valor": 320,
+              "idProduto": null
+            },
+            {
+              "descricaoTabelaPreco": "ATACADO",
+              "idTabelaPreco": "62d553bcd22c5a6bf607eac9",
+              "descontoMaximo": 0,
+              "markup": 151.9232,
+              "valor": 322.461696,
+              "idProduto": null
+            },
+            {
+              "descricaoTabelaPreco": "TABELA PROMO",
+              "idTabelaPreco": "62dff3f77b20f1170d5e3504",
+              "descontoMaximo": 0,
+              "markup": 93.1411,
+              "valor": 247.220608,
+              "idProduto": null
+            }
+          ],
+          "woocommerce": false,
+          "idWoocommerce": 0,
+          "dadosEcommerce": null,
+          "tags": [],
+          "fichasTecnica": [],
+          "naoMovimentarEstoque": false,
+          "markupMinimo": 0,
+          "utilizaOrdemProducao": false,
+          "validarMarkupMinPor": [],
+          "necessidadesCompra": [],
+          "qtdeOrdemCompra": 0,
+          "anexos": [],
+          "inUnidadeMedida": {
+            "descricao": "PC"
+          },
+          "inGrupoProduto": {
+            "descricao": "Promoções",
+            "nomeFluxoCaixa": "DIVERSOS",
+            "tipoFluxoCaixa": "DIVERSOS"
+          },
+          "inGrupoPreco": null,
+          "inSubgrupoProduto": {
+            "descricao": "GERAL"
+          },
+          "inMarca": {
+            "descricao": "MARLAN"
+          },
+          "inFornecedorAtual": {
+            "nomeRazaoSocial": "ELITE COMERCIO DE AREIA LTDA",
+            "apelidoNomeFantasia": "ARGAMASSA RAMOS",
+            "cpfCnpj": "11408746000155",
+            "rgIe": "0430156340",
+            "identificadorIntermediario": null,
+            "inEmpresaCadastro": {
+              "razaoSocial": "EMPRESA ESTEVAO ALMEIDA AMBIENTE DE HOMOLOGACAO",
+              "nomeFantasia": "EMPRESA ESTEVAO ALMEIDA AMBIENTE DE HOMOLOGACAO"
+            },
+            "inGrupoFornecedor": {
+              "descricao": "GERAL",
+              "nomeFluxoCaixa": "LUCRO LÍQUIDO",
+              "tipoFluxoCaixa": "ANALÍTICA"
+            },
+            "inPlanoContas": null
+          },
+          "inNcm": {
+            "codigo": "6109.10.00",
+            "descricao": "CAMISETAS T-SHIRTS ETC.DE MALHA DE ALGODAO"
+          },
+          "inCfop": null,
+          "tokenOrganizacao": "estevao@ibrsistemas.com.br",
+          "dispositivos": [],
+          "dispositivoCriacao": {
+            "identityToken": "354A8EAA5D8BC70917D50605E186582D",
+            "tipoAcesso": "WEB",
+            "identificadorDispositivo": "000000",
+            "versao": "2.4.2",
+            "logado": true,
+            "bloqueado": false,
+            "createdAt": "2020-11-26T19:13:09.279Z",
+            "ultimoLogin": "2023-10-10T18:37:39.012Z"
+          },
+          "createdAt": "2023-10-10T18:43:43.755Z",
+          "updatedAt": "2024-01-12T14:52:25.677Z",
+          "deletedAt": "0001-01-01T00:00:00Z",
+          "isDeleted": false
+        },
+        "inProduto": {
+          "descricao": "CAMISETA MASCULINA AZUL MARINHO 19 4024 KYLY 10 (CÓPIA)",
+          "codigo": "2761",
+          "codigoIdentificador": null,
+          "servico": false,
+          "utilizaControleValidade": false,
+          "nomeFluxoCaixa": "DIVERSOS",
+          "tipoFluxoCaixa": null,
+          "codigosBarras": [
+            {
+              "codigo": "2761",
+              "descricao": "COD BARRAS",
+              "valorUnitarioVariavel": 0,
+              "qtdCustomizada": 0
+            }
+          ],
+          "referencias": [
+            {
+              "ref": "2761",
               "descricao": "REFERÊNCIA",
               "idFornecedor": null,
               "inFornecedor": null
             },
             {
-              "ref": "2760",
+              "ref": "2761",
               "descricao": "COD FORNECEDOR",
               "idFornecedor": "650467d2c81c13df18c0d371",
               "inFornecedor": {
@@ -185,6 +521,28 @@
                 "apelidoNomeFantasia": "ARGAMASSA RAMOS",
                 "cpfCnpj": "11408746000155",
                 "rgIe": "0430156340",
+                "identificadorIntermediario": null,
+                "inEmpresaCadastro": {
+                  "razaoSocial": "EMPRESA ESTEVAO ALMEIDA AMBIENTE DE HOMOLOGACAO",
+                  "nomeFantasia": "EMPRESA ESTEVAO ALMEIDA AMBIENTE DE HOMOLOGACAO"
+                },
+                "inGrupoFornecedor": {
+                  "descricao": "GERAL",
+                  "nomeFluxoCaixa": "LUCRO LÍQUIDO",
+                  "tipoFluxoCaixa": "ANALÍTICA"
+                },
+                "inPlanoContas": null
+              }
+            },
+            {
+              "ref": "2761",
+              "descricao": "COD FORNECEDOR",
+              "idFornecedor": "64ee374d3235c073fc62c78a",
+              "inFornecedor": {
+                "nomeRazaoSocial": "TNT MERCURIO CARGAS E ENCOMENDAS",
+                "apelidoNomeFantasia": "",
+                "cpfCnpj": "95591723005188",
+                "rgIe": "251767795",
                 "identificadorIntermediario": null,
                 "inEmpresaCadastro": {
                   "razaoSocial": "EMPRESA ESTEVAO ALMEIDA AMBIENTE DE HOMOLOGACAO",
@@ -206,36 +564,36 @@
             {
               "descricaoTabelaPreco": "TABELA PADRÃO",
               "idTabelaPreco": "5fbffe47de093c166cfd7ad8",
-              "descontoMaximo": 10,
-              "markup": 160,
-              "valor": 128.55544,
+              "descontoMaximo": 0,
+              "markup": 150,
+              "valor": 320,
               "idProduto": null
             },
             {
               "descricaoTabelaPreco": "ATACADO",
               "idTabelaPreco": "62d553bcd22c5a6bf607eac9",
               "descontoMaximo": 0,
-              "markup": -3.4737,
-              "valor": 55.02,
+              "markup": 151.9232,
+              "valor": 322.461696,
               "idProduto": null
             },
             {
               "descricaoTabelaPreco": "TABELA PROMO",
               "idTabelaPreco": "62dff3f77b20f1170d5e3504",
               "descontoMaximo": 0,
-              "markup": 15,
-              "valor": 56.86106,
+              "markup": 93.1411,
+              "valor": 247.220608,
               "idProduto": null
             }
           ],
-          "dadosTecnicos": null,
-          "aplicacoes": null,
-          "dadosExtras": null,
-          "descricaoAdicional": null,
+          "dadosTecnicos": "Dados Tecnicos do produto",
+          "aplicacoes": "Camiseta masculina azul é sua utilização como uma peça de vestuário casual e elegante para diversas ocasiões. A tonalidade azul é conhecida por sua capacidade de se adaptar a uma ampla gama de combinações de roupas, tornando-a uma escolha ideal para o dia a dia. ",
+          "dadosExtras": " Combinada com jeans para um visual descontraído ou com calças de alfaiataria para um toque mais sofisticado, a camiseta azul pode ser usada no escritório, em um encontro informal ou em um passeio relaxante, proporcionando conforto e estilo ao mesmo tempo. Seu apelo universal e versatilidade a tornam um item indispensável no guarda-roupa masculino.",
+          "descricaoAdicional": "Descrição adicional do produto",
           "validadeCA": "0001-01-02T00:00:00Z",
           "numeroCA": null,
           "inGrupoProduto": {
-            "descricao": "GERAL",
+            "descricao": "Promoções",
             "nomeFluxoCaixa": "DIVERSOS",
             "tipoFluxoCaixa": "DIVERSOS"
           },
@@ -243,7 +601,7 @@
             "descricao": "GERAL"
           },
           "inMarca": {
-            "descricao": "PISTOLA"
+            "descricao": "MARLAN"
           },
           "inUnidadeMedida": {
             "descricao": "PC"
@@ -343,7 +701,7 @@
           "cst": "04"
         },
         "quantidade": 1,
-        "valorUnitario": 128.55544,
+        "valorUnitario": 320,
         "valorDesconto": 0,
         "valorDescontoItem": 0,
         "percentualDescontoItem": 0,
@@ -355,11 +713,11 @@
         "valorIcms": 0,
         "valorBaseIcmsST": 0,
         "valorIcmsST": 0,
-        "valorBaseIpi": 128.56,
+        "valorBaseIpi": 320,
         "valorIpi": 0,
-        "valorBasePis": 128.56,
+        "valorBasePis": 320,
         "valorPis": 0,
-        "valorBaseCofins": 128.56,
+        "valorBaseCofins": 320,
         "valorCofins": 0,
         "valorBaseIss": 0,
         "valorIss": 0,
@@ -369,19 +727,52 @@
         "valorBaseFcp": 0,
         "mva": 0,
         "mvaAjustado": 0,
-        "valorTotalItem": 128.56,
-        "valorTotalTributos": 17.29,
+        "valorTotalItem": 320,
+        "valorTotalTributos": 43.04,
         "valorTributosFederal": 0,
         "valorTributosEstadual": 0,
         "valorTributosMunicipal": 0,
         "valorIcmsOperacao": 0,
         "percentualDiferimento": 0,
         "valorIcmsDiferimento": 0,
-        "icmsInter": null,
-        "icmsIntra": null,
-        "ipi": null,
-        "pis": null,
-        "cofins": null,
+        "icmsInter": {
+          "aliquota": 0,
+          "base": 0,
+          "modalidade": 0,
+          "origem": "0",
+          "csosn": "102",
+          "aliquotaFcp": 0,
+          "diferimento": 0,
+          "reduzirValorIcms": false,
+          "cst": "00"
+        },
+        "icmsIntra": {
+          "aliquota": 0,
+          "base": 0,
+          "modalidade": 0,
+          "origem": "0",
+          "csosn": "102",
+          "aliquotaFcp": 0,
+          "diferimento": 0,
+          "reduzirValorIcms": false,
+          "cst": "00"
+        },
+        "ipi": {
+          "aliquota": 0,
+          "base": 0,
+          "ipiUnidade": false,
+          "valorUnidade": 0,
+          "cst": "99"
+        },
+        "pis": {
+          "aliquota": 0,
+          "cst": "04"
+        },
+        "cofins": {
+          "aliquota": 0,
+          "base": 0,
+          "cst": "04"
+        },
         "iss": null
       }
     ],
@@ -393,7 +784,7 @@
         "identificadorTef": null,
         "codigoAdministrativoTef": null,
         "numeroAutorizacao": null,
-        "valor": 128.55544,
+        "valor": 320,
         "troco": 0,
         "idPix": null,
         "descontoAcrescimoCondicao": 0,
@@ -455,7 +846,7 @@
     "cnpjsAutorizados": [],
     "vinculos": [],
     "cartasCorrecao": [],
-    "codigoNfe": "32705081829",
+    "codigoNfe": "87705085763",
     "chave": "",
     "protocolo": "",
     "lote": "",
@@ -478,13 +869,13 @@
     "valorFcp": 0,
     "valorFcpST": 0,
     "valorFcpSTRet": 0,
-    "valorTotalTributos": 17.29,
-    "valorTotalProdutos": 128.56,
+    "valorTotalTributos": 43.04,
+    "valorTotalProdutos": 320,
     "valorFrete": 0,
     "valorSeguro": 0,
     "valorDesconto": 0,
     "valorOutrasDespesas": 0,
-    "valorTotalNf": 128.56,
+    "valorTotalNf": 320,
     "aliquotaIrrf": 0,
     "valorBaseIrrf": 0,
     "valorRetidoIrrf": 0,
@@ -504,28 +895,28 @@
       "nomeFantasia": "EMPRESA ESTEVAO ALMEIDA AMBIENTE DE HOMOLOGACAO"
     },
     "inDestinatario": {
-      "nomeRazaoSocial": "M ISABEL DE MOURA",
-      "apelidoNomeFantasia": "MARIA ISABEL DE MOURA",
-      "cpfCnpj": "01207495050",
-      "rgIe": "409016856897",
-      "codigo": 1860,
+      "nomeRazaoSocial": "PEDRO HENRIQUE WEBER DA SILVA",
+      "apelidoNomeFantasia": "PEDRO (DEMONSTRAÇÃO)",
+      "cpfCnpj": "19652361038",
+      "rgIe": "439834946",
+      "codigo": 1834,
       "endereco": {
         "tipo": "PRINCIPAL",
-        "cep": "95603168",
-        "logradouro": "SEBASTIÃO AMORETTI",
-        "numero": "1616",
+        "cep": "95630000",
+        "logradouro": "RUA ERVINO LEHNEN, 378",
+        "numero": "1097",
         "complemento": "",
         "pontoReferencia": null,
-        "idBairro": "6578b966d775dbe13c5d95c9",
-        "idCidade": "5c5bfc4648269d14c1c464f3",
+        "idBairro": "5fbffe45de093c166cfd7ab7",
+        "idCidade": "5c5bfc4648269d14c1c46469",
         "principal": true,
         "inCidade": {
-          "descricao": "Taquara",
+          "descricao": "Parobé",
           "uf": "RS",
-          "codigoIbge": "4321204"
+          "codigoIbge": "4314050"
         },
         "inBairro": {
-          "descricao": "SANTA TERESINHA"
+          "descricao": "CENTRO"
         }
       },
       "inEmpresaCadastro": {
@@ -585,24 +976,24 @@
     "capturaDadosAdicionais": true,
     "informarNaturezaOperacaoManualmente": false,
     "dataRetroativa": false,
-    "_id": "65a17bf4652110079abaddfd",
+    "_id": "65a18b62303206ac7532fcd8",
     "numeroIdentificador": 0,
-    "dataHoraEmissao": "0001-01-01T00:00:00Z",
-    "dataHoraEntradaOuSaida": "2024-01-12T17:50:29.867Z",
+    "dataHoraEmissao": "0001-01-01T00:00:00",
+    "dataHoraEntradaOuSaida": "2024-01-12T15:56:03.903-03:00",
     "identificadorDestino": 0,
     "tipoEmissao": 0,
     "tipoAmbiente": 2,
     "gerandoCobrancas": false,
-    "dataHoraCancelamento": "0001-01-01T00:00:00Z",
+    "dataHoraCancelamento": "0001-01-01T00:00:00",
     "justificativaCancelamento": null,
-    "dataHoraInutilizacao": "0001-01-01T00:00:00Z",
+    "dataHoraInutilizacao": "0001-01-01T00:00:00",
     "justificativaInutilizacao": null,
-    "dataHoraContingencia": "0001-01-01T00:00:00Z",
+    "dataHoraContingencia": "0001-01-01T00:00:00",
     "justificativaContingencia": null,
     "idEmpresa": "5fbffe47de093c166cfd7adf",
     "ufEmpresa": "RS",
     "idTerminal": "5fbffe4fde093c166cfd7b0f",
-    "idDestinatario": "6579f1c0db78f5ce2d826a8a",
+    "idDestinatario": "6234edeb711d8caa5b15db7e",
     "ufDestinatario": "RS",
     "idFuncionario": "5fbffe48de093c166cfd7ae4",
     "idTabelaPreco": "5fbffe47de093c166cfd7ad8",
@@ -616,27 +1007,27 @@
     "diretorioLogEnvio": null,
     "diretorioLogConsultaRecibo": null,
     "processandoNfe": false,
-    "logradouroNfe": "SEBASTIÃO AMORETTI",
-    "numeroNfe": "1616",
+    "logradouroNfe": "RUA ERVINO LEHNEN, 378",
+    "numeroNfe": "1097",
     "complementoNfe": "",
-    "cepNfe": "95603-168",
-    "idBairroNfe": "6578b966d775dbe13c5d95c9",
-    "idCidadeNfe": "5c5bfc4648269d14c1c464f3",
+    "cepNfe": "95630-000",
+    "idBairroNfe": "5fbffe45de093c166cfd7ab7",
+    "idCidadeNfe": "5c5bfc4648269d14c1c46469",
     "inVeiculo": null,
     "inBairroNfe": {
-      "descricao": "SANTA TERESINHA"
+      "descricao": "CENTRO"
     },
     "inCidadeNfe": {
-      "descricao": "Taquara",
+      "descricao": "Parobé",
       "uf": "RS",
-      "codigoIbge": "4321204"
+      "codigoIbge": "4314050"
     },
     "tokenOrganizacao": null,
     "dispositivos": [],
     "dispositivoCriacao": null,
-    "createdAt": "2024-01-12T17:50:44.764Z",
-    "updatedAt": "2024-01-12T17:50:44.764Z",
-    "deletedAt": "0001-01-01T00:00:00Z",
+    "createdAt": "2024-01-12T15:56:17.9259109-03:00",
+    "updatedAt": "2024-01-12T15:56:17.9259115-03:00",
+    "deletedAt": "0001-01-01T00:00:00",
     "valorTributosFederal": 0,
     "valorTributosEstadual": 0,
     "valorTributosMunicipal": 0,
