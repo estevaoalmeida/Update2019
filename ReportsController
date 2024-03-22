@@ -1,42 +1,147 @@
-using DevExpress.AspNetCore.Reporting.QueryBuilder;
-using DevExpress.AspNetCore.Reporting.QueryBuilder.Native.Services;
-using DevExpress.AspNetCore.Reporting.ReportDesigner;
-using DevExpress.AspNetCore.Reporting.ReportDesigner.Native.Services;
-using DevExpress.AspNetCore.Reporting.WebDocumentViewer;
-using DevExpress.AspNetCore.Reporting.WebDocumentViewer.Native.Services;
-using Microsoft.AspNetCore.Authorization;
+using DevExpress.Compatibility.System.Web;
+using DevExpress.DataAccess.Json;
+using DevExpress.DataAccess.Native.Web;
+using DevExpress.DataAccess.ObjectBinding;
+using DevExpress.XtraReports.UI;
+using DevExpress.XtraReports.Web.Extensions;
+using DevExpress.XtraReports.Web.ReportDesigner.Services;
+using ibr.web.api.Interfaces;
+using ibr.web.api.Models;
+using ibr.web.api.Models.Security;
+using ibr.web.api.Tools;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading.Tasks;
 
-[ApiExplorerSettings(IgnoreApi = true)]
-[Route("api/v1/DXXRDV")]
-public class CustomWebDocumentViewerController : WebDocumentViewerController
+namespace ibr.web.api.Data.Report
 {
-    public CustomWebDocumentViewerController(IWebDocumentViewerMvcControllerService controllerService) : base(controllerService) { }
-    public override Task<IActionResult> Invoke()
+    public class ReportStorage : ReportStorageWebExtension
     {
-        return base.Invoke();
-    }
-}
+        public Dictionary<string, XtraReport> Reports = new Dictionary<string, XtraReport>();
+        string paramTipoImpressao = string.Empty;
+        string paramModeloImpressao = string.Empty;
+        string paramTokenOrganizacao = string.Empty;
 
-[ApiExplorerSettings(IgnoreApi = true)]
-[Route("api/v1/DXXQB")]
-public class CustomQueryBuilderController : QueryBuilderController
-{
-    public CustomQueryBuilderController(IQueryBuilderMvcControllerService controllerService) : base(controllerService) { }
-    public override Task<IActionResult> Invoke()
-    {
-        return base.Invoke();
-    }
-}
+        private IReportRepository _reportRepository;
 
-[ApiExplorerSettings(IgnoreApi = true)]
-[Route("api/v1/DXXRD")]
-public class CustomReportDesignerController : ReportDesignerController
-{
-    public CustomReportDesignerController(IReportDesignerMvcControllerService controllerService) : base(controllerService) { }
-    public override Task<IActionResult> Invoke()
+        public ReportStorage(IReportRepository reportRepository)
+        {
+            _reportRepository = reportRepository;
+        }
+
+        public override bool CanSetData(string modeloImpressao)  //quando salva editando
+        {
+            return true;
+        }
+
+        public override byte[] GetData(string stringParams)
+        {
+            paramTipoImpressao = Functions.GetTextFromQueryParameter(stringParams, "tipoImpressao");
+            paramModeloImpressao = Functions.GetTextFromQueryParameter(stringParams, "modeloImpressao");
+            paramTokenOrganizacao = Functions.GetTextFromQueryParameter(stringParams, "tokenOrganizacao");
+
+            //limpa reports e vai buscar o report a editar
+            Reports.Clear();
+            Reports.Add(paramModeloImpressao, ReportRepository.getInstance().GetXtraReport(paramTokenOrganizacao, paramTipoImpressao, paramModeloImpressao));
+
+            var report = Reports[paramModeloImpressao];
+            using (MemoryStream stream = new MemoryStream())
+            {
+                report.SaveLayoutToXml(stream);
+                return stream.ToArray();
+            }
+        }
+
+        public override Dictionary<string, string> GetUrls()
+        {
+            return Reports.ToDictionary(x => x.Key, y => y.Key);
+        }
+
+        public override void SetData(XtraReport report, string modeloImpressao)
+        {
+            if (modeloImpressao.StartsWith("?"))
+            {  //aqui pode vir o nome do modelo como string params, então testa para pegar
+                modeloImpressao = Functions.GetTextFromQueryParameter(modeloImpressao, "modeloImpressao");
+            }
+            paramModeloImpressao = modeloImpressao;
+
+            if (Reports.ContainsKey(paramModeloImpressao))  //quando salva editando
+            {
+                Reports[paramModeloImpressao] = report;
+                CreateOrUpdateImpressaoPersonalizada(report, paramModeloImpressao, false);
+            }
+            else  //quando salva adicionando
+            {
+                Reports.Clear();
+                Reports.Add(paramModeloImpressao, report);
+                CreateOrUpdateImpressaoPersonalizada(report, paramModeloImpressao, true);
+            }
+        }
+
+        public override string SetNewData(XtraReport report, string modeloImpressao)  //quando salva adicionando
+        {
+            try
+            {
+                modeloImpressao = modeloImpressao.ToUpper();
+
+                //verifica se tem outro com mesmo nome, pois não pode
+                if (ExistsReportModelName(modeloImpressao))
+                    throw new Exception($"Já existe um modelo com o nome '{modeloImpressao}'");
+
+                SetData(report, modeloImpressao);
+                return modeloImpressao;
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        private bool ExistsReportModelName(string modeloImpressao)
+        {
+            XtraReport report = ReportRepository.getInstance().GetXtraReport(paramTokenOrganizacao, paramTipoImpressao, modeloImpressao);
+            return report != null;
+        }
+
+        public override bool IsValidUrl(string modeloImpressao)  //quando salva editando
+        {
+            return true;
+        }
+
+        public async Task CreateOrUpdateImpressaoPersonalizada(XtraReport report, string modeloImpressao, bool create)
+        {
+            ImpressaoPersonalizada impressao = new ImpressaoPersonalizada();
+            impressao.TipoImpressao = paramTipoImpressao;
+            impressao.ModeloImpressao = modeloImpressao;
+            impressao.TokenOrganizacao = paramTokenOrganizacao;
+
+            using (MemoryStream stream = new MemoryStream())
+            {
+                report.SaveLayoutToXml(stream);
+                stream.Position = 0;
+
+                using (StreamReader sr = new StreamReader(stream))
+                {
+                    impressao.XmlImpressao = sr.ReadToEnd();
+                }
+            }
+            if (create)
+                await ReportRepository.getInstance().Create(impressao);
+            else
+                await ReportRepository.getInstance().Update(impressao);
+        }
+    }
+
+    public class CustomExceptionHandler : IReportDesignerExceptionHandler
     {
-        return base.Invoke();
+        public string GetExceptionMessage(Exception ex)
+        {
+            return $"Ocorreu um erro: {ex.Message}";
+        }
     }
 }
