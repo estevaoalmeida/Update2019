@@ -83,7 +83,7 @@ namespace ibr.web.api.Controllers.Report
 
             try
             {
-                await ReportRepository.getInstance().Delete(dbImpressaoPersonalizadas);
+                await ReportRepository.getInstance().Delete(_user, dbImpressaoPersonalizadas);
                 return Ok(new { status = "success", message = "Modelo de impressão deletado com sucesso" });
             }
             catch (Exception ex)
@@ -285,6 +285,19 @@ namespace ibr.web.api.Controllers.Report
             return dataSources;
         }
 
+        /// <summary>
+        /// Registra na base o report enviado.
+        /// </summary>
+        [HttpPost("savePersonalizado")]
+        public async Task<IActionResult> Post([FromBody] dynamic data)
+        {
+            string parametros = data.GetProperty("param").ToString(); // data.param.Value;
+            string xmlReport = data.GetProperty("report").ToString(); //data.report.Value;
+
+            ReportRepository.getInstance().CreateOrUpdate(_user, xmlReport, parametros, true);
+
+            return Ok();
+        }
     }
 
 
