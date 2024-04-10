@@ -61,6 +61,8 @@ using ibr.web.api.Models.Report.Venda.ReportOrdemCompraA4Padrao;
 using ibr.web.api.Models.Report.Nfce.ReportComprovantePagamentoNfce;
 using ibr.web.api.Models.Report.Nfe.ReportRomaneioNfeA4Padrao;
 using ibr.web.api.Models.Report.OrdemProducao;
+using ibr.web.api.Models.Report.ServicoTerceirizado.ReportServicoTerceirizadoA4Padrao;
+using DevExpress.XtraRichEdit.Import.OpenXml;
 
 namespace ibr.web.api.Data
 {
@@ -99,10 +101,12 @@ namespace ibr.web.api.Data
         /// Altera o status do modelo de impressão para 'DELETADO'
         /// </summary>
         /// <param name="ImpressaoPersonalizada">Modelo de impressão a ser deletado</param>
-        public async Task<bool> Delete(ImpressaoPersonalizada impressaoPersonalizada)
+        public async Task<bool> Delete(AuthenticatedUser user, ImpressaoPersonalizada impressaoPersonalizada)
         {
+            AuthenticatedUser userNovo = AuthenticatedUser.NewInstance(user);
             try
             {
+                await ImpressaoPadraoRepository.getInstance().removerDaImpressaoPadrao(userNovo, impressaoPersonalizada);
                 impressaoPersonalizada.IsDeleted = true;
                 impressaoPersonalizada.DeletedAt = DateTime.Now;
 
@@ -165,6 +169,8 @@ namespace ibr.web.api.Data
                 reports.Add(new ImpressaoPersonalizada() { TipoImpressao = "ORDEM SERVICO PETSHOP", ModeloImpressao = "ORDEM SERVICO PETSHOP A4 PADRÃO", TokenOrganizacao = userNovo.TokenOrganizacao });
                 reports.Add(new ImpressaoPersonalizada() { TipoImpressao = "ORDEM SERVICO OUTROS", ModeloImpressao = "ORDEM SERVICO OUTROS A4 PADRÃO", TokenOrganizacao = userNovo.TokenOrganizacao });
                 reports.Add(new ImpressaoPersonalizada() { TipoImpressao = "CARNÊ PAGAMENTO", ModeloImpressao = "CARNÊ PAGAMENTO TÉRMICA PADRÃO", TokenOrganizacao = userNovo.TokenOrganizacao });
+                reports.Add(new ImpressaoPersonalizada() { TipoImpressao = "CRÉDITO", ModeloImpressao = "CRÉDITO TÉRMICA PADRÃO", TokenOrganizacao = userNovo.TokenOrganizacao });
+                reports.Add(new ImpressaoPersonalizada() { TipoImpressao = "SERVIÇO TERCEIRIZADO", ModeloImpressao = "SERVIÇO TERCEIRIZADO A4 PADRÃO", TokenOrganizacao = userNovo.TokenOrganizacao });
 
                 return reports;
             }
@@ -222,7 +228,7 @@ namespace ibr.web.api.Data
         //Atualiza uma impressão personalizada para a organização
         public async Task<bool> Update(ImpressaoPersonalizada impressaoPersonalizada)
         {
-            FilterDefinition<ImpressaoPersonalizada> filter = Builders<ImpressaoPersonalizada>.Filter.Eq(x => x._id, impressaoPersonalizada._id) & 
+            FilterDefinition<ImpressaoPersonalizada> filter = Builders<ImpressaoPersonalizada>.Filter.Eq(x => x._id, impressaoPersonalizada._id) &
                                                               Builders<ImpressaoPersonalizada>.Filter.Eq(x => x.TokenOrganizacao, impressaoPersonalizada.TokenOrganizacao) &
                                                               Builders<ImpressaoPersonalizada>.Filter.Eq(x => x.TipoImpressao, impressaoPersonalizada.TipoImpressao) &
                                                               Builders<ImpressaoPersonalizada>.Filter.Eq(x => x.ModeloImpressao, impressaoPersonalizada.ModeloImpressao);
@@ -242,6 +248,46 @@ namespace ibr.web.api.Data
             }
             catch (Exception ex)
             {
+                throw ex;
+            }
+        }
+
+        public async Task<bool> CreateOrUpdate(AuthenticatedUser _user, string xmlReport, string parametros, bool create)
+        {
+            AuthenticatedUser userNovo = AuthenticatedUser.NewInstance(_user);
+            try
+            {
+                string tipoImpressao = Functions.GetTextFromQueryParameter(parametros, "tipoImpressao");
+                string modeloImpressao = Functions.GetTextFromQueryParameter(parametros, "modeloImpressao");
+                string tokenOrganizacao = Functions.GetTextFromQueryParameter(parametros, "tokenOrganizacao");
+
+                ImpressaoPersonalizada impressao = new ImpressaoPersonalizada();
+
+                if (create)
+                {
+                    //Busca o report pra ver se já existe
+                    XtraReport report = ReportRepository.getInstance().GetXtraReport(tokenOrganizacao, tipoImpressao, modeloImpressao);
+                    if (report != null)
+                        throw new Exception($"Já existe um modelo com o nome '{modeloImpressao}'");
+
+                    impressao.TipoImpressao = tipoImpressao;
+                    impressao.ModeloImpressao = modeloImpressao;
+                    impressao.TokenOrganizacao = tokenOrganizacao;
+                    impressao.XmlImpressao = xmlReport;
+                    Create(impressao);
+                }
+                else
+                {
+                    impressao = GetByTipoImpressaoModelo(tokenOrganizacao, tipoImpressao, modeloImpressao).Result;
+                    impressao.XmlImpressao = xmlReport;
+                    Update(impressao);
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                ErroSincronizacaoRepository.getInstance().RegisterError(ex, "ReportRepository", "CreateOrUpdate", userNovo);
                 throw ex;
             }
         }
@@ -312,7 +358,7 @@ namespace ibr.web.api.Data
                     break;
                 case "MOVIMENTACAO CAIXA A4 DETALHADO PADRÃO":
                     return new ReporMovimentacaoCaixaA4DetalhadoPadrao();
-                    break;                
+                    break;
                 case "MOVIMENTACAO CAIXA A4 DETALHADO COM VENDAS":
                     return new ReporMovimentacaoCaixaA4DetalhadoPadrao();
                     break;
@@ -403,6 +449,9 @@ namespace ibr.web.api.Data
                 case "ROMANEIO PLANO TRANSPORTE ESPÉCIE PAGAMENTO A4":
                     return new ReportRomaneioPlanoTransporteEspeciePagamentoA4();
                     break;
+                case "SERVIÇO TERCEIRIZADO A4 PADRÃO":
+                    return new ReportServicoTerceirizadoA4Padrao();
+                    break;
                 case "TRANSFERÊNCIA DE ESTOQUE A4 PADRÃO":
                     return new ReportTransferenciaEstoqueA4Padrao();
                     break;
@@ -446,7 +495,7 @@ namespace ibr.web.api.Data
                     json = GetJsonCarnePagamento(idRegistro, paramOrigemRegistro);
                     break;
                 case "COMPROVANTE PAGAMENTO NFCE":
-                    json = GetJsonComprovantePagamentoNfce(idRegistro, aux);
+                    json = GetJsonComprovantePagamentoNfce(idRegistro, aux, paramOrigemRegistro);
                     break;
                 case "CRÉDITO":
                     json = GetJsonCredito(idRegistro);
@@ -458,7 +507,7 @@ namespace ibr.web.api.Data
                     json = GetJsonContaReceber(idRegistro);
                     break;
                 case "CONTA A RECEBER CLIENTE":
-                    json = GetJsonContaReceberCliente(userNovo, aux);
+                    json = GetJsonContaReceberCliente(userNovo, idRegistro, aux);
                     break;
                 case "CONTA A PAGAR":
                     json = GetJsonContaPagar(idRegistro);
@@ -530,10 +579,13 @@ namespace ibr.web.api.Data
                     json = GetJsonRomaneioCompra(idRegistro);
                     break;
                 case "ROMANEIO NFE":
-                    json = GetJsonRomaneioNfe(idRegistro);
+                    json =  GetJsonRomaneioNfe(idRegistro);
                     break;
                 case "PLANO TRANSPORTE":
                     json = GetJsonRomaneioPlanoTransporte(idRegistro);
+                    break;
+                case "SERVIÇO TERCEIRIZADO":
+                    json = GetJsonServicoTerceirizado(idRegistro);
                     break;
                 case "TRANSFERENCIA":
                     json = GetJsonTransferenciaEstoque(idRegistro);
@@ -653,21 +705,126 @@ namespace ibr.web.api.Data
         /// <summary>
         /// Cria o json de comprovante de pagamento da NFC-e
         /// </summary>
-        private string GetJsonComprovantePagamentoNfce(string idRegistro, string indexCobranca)
+        private string GetJsonComprovantePagamentoNfce(string idRegistro, string indexCobranca, string paramOrigemRegistro)
         {
+            if (string.IsNullOrEmpty(paramOrigemRegistro))
+                paramOrigemRegistro = "venda";
+
             int index = int.Parse(indexCobranca);
 
-            Venda venda = VendaRepository.getInstance().GetById(idRegistro, true).Result;  //pega a venda
-            VendaPrint vendaPrint = (VendaPrint)venda;
+            ComprovantePagamentoNfcePrint comprovantePagamentoNfcePrint = new ComprovantePagamentoNfcePrint();
+            CobrancaPrint cobrancaPrint = new CobrancaPrint();
+            string idEmpresa = "";
+            string idEspeciePagamento = "";
 
-            Empresa empresa = EmpresaRepository.getInstance().GetById(venda.IdEmpresa, true).Result;  //pega empresa da venda
+            //Quando não se sabe se ta vindo da venda ou da conta a receber
+            if (paramOrigemRegistro.Equals("nfce"))
+            {
+                Nfce nfce = NfceRepository.getInstance().GetById(idRegistro, true).Result;
+                Vinculo vinculo = null;
+                if (nfce.NfceFaturaPagamento)
+                {
+                    vinculo = nfce.Vinculos.Find(vinc => vinc.Proprietario.Equals("ContaReceber"));
+                    if(vinculo != null)
+                    {
+                        idRegistro = vinculo.IdProprietario;
+                        paramOrigemRegistro = "contaReceber";
+                    }
+                }
+                else
+                {
+                    vinculo = nfce.Vinculos.Find(vinc => vinc.Proprietario.Equals("Venda"));
+                    if (vinculo != null)
+                    {
+                        idRegistro = vinculo.IdProprietario;
+                        paramOrigemRegistro = "venda";
+                    }
+                }
+            }
+
+            if (paramOrigemRegistro.Equals("venda"))
+            {
+                Venda venda = VendaRepository.getInstance().GetById(idRegistro, true).Result;  //pega a venda
+                if (venda == null)
+                    return "";
+
+                comprovantePagamentoNfcePrint.Documento = venda.CodigoVenda;
+                comprovantePagamentoNfcePrint.DataPagamento = venda.DataHoraVenda.ToLocalTime();
+                comprovantePagamentoNfcePrint.Usuario = (venda.InFuncionario == null || venda.InFuncionario.InUsuario == null) ? null : venda.InFuncionario.InUsuario.Nome;
+                comprovantePagamentoNfcePrint.Terminal = venda.InTerminal == null ? null : venda.InTerminal.Descricao;
+
+                idEmpresa = venda.IdEmpresa;
+
+                Cobrancas cobranca = venda.VendaCobranca[index];
+                cobrancaPrint = (CobrancaPrint)cobranca;
+                
+                MovimentacaoTef movTef =  MovimentacaoTefRepository.getInstance().GetByNSU(cobranca.CodigoAdministrativoTef, false).Result;
+                if (movTef != null)
+                {
+                    comprovantePagamentoNfcePrint.CardBrand = movTef.NomeBandeiraCartao;
+                    comprovantePagamentoNfcePrint.TerminalSerialNumber = movTef.CodigoAdministrativo;
+                    comprovantePagamentoNfcePrint.Holder = "**** **** **** " + movTef.NumeroCartaoCliente;
+                }
+               
+
+                idEspeciePagamento = cobranca.IdEspeciePagamento;
+            }
+            if (paramOrigemRegistro.Equals("contaReceber"))
+            {
+                //Quando contaReceber, os ids são enviados como parametros no campo idRegistro
+                string[] listParamContaReceber = Functions.GetListFromQueryParameter(idRegistro, "contaReceber");
+
+                ContaReceber contaReceber = ContaReceberRepository.getInstance().GetById(listParamContaReceber.Length <= 0 ? idRegistro : listParamContaReceber[0], true).Result;  //pega a contaReceber
+                if (contaReceber == null)
+                    return "";
+
+                index = listParamContaReceber.Length > 1 ? contaReceber.Pagamentos.Count - 1 : index;
+                PagamentoContaReceber pagamento = contaReceber.Pagamentos[index];
+                if (pagamento == null)
+                    return "";
+                MovimentacaoTef movTef = MovimentacaoTefRepository.getInstance().GetByNSU(pagamento.CodigoAdministrativoTef, false).Result;
+                if (movTef != null)
+                {
+                    comprovantePagamentoNfcePrint.CardBrand = movTef.NomeBandeiraCartao;
+                    comprovantePagamentoNfcePrint.TerminalSerialNumber = movTef.CodigoAdministrativo;
+                    comprovantePagamentoNfcePrint.Holder = "**** **** **** " + movTef.NumeroCartaoCliente;
+                }
+
+                comprovantePagamentoNfcePrint.Documento = contaReceber.Documento;
+                comprovantePagamentoNfcePrint.DataPagamento = pagamento.DataHoraPagamento.ToLocalTime();
+                comprovantePagamentoNfcePrint.Usuario = pagamento.InUsuario == null ? null : pagamento.InUsuario.Nome;
+                comprovantePagamentoNfcePrint.Terminal = pagamento.InTerminal == null ? null : pagamento.InTerminal.Descricao;
+
+                idEmpresa = contaReceber.IdEmpresa;
+                idEspeciePagamento = pagamento.IdEspeciePagamento;
+
+                cobrancaPrint.NumeroAutorizacao = pagamento.ControleTef;
+                cobrancaPrint.Valor = pagamento.ValorPago;
+
+                if(listParamContaReceber.Length > 1)
+                {
+                    string parametros = idRegistro.Replace("contaReceber", "id");
+                    List<ContaReceber> listContasReceber = ContaReceberRepository.getInstance().GetByIds(parametros, contaReceber.TokenOrganizacao).Result;
+                    foreach(ContaReceber cre in listContasReceber)
+                    {
+                        if(cre._id != listParamContaReceber[0]) //Porque o primeiro ja consta no campo valor da cobrancaPrint
+                        {
+                            PagamentoContaReceber pagamentoAux = cre.Pagamentos[cre.Pagamentos.Count - 1];
+                            cobrancaPrint.Valor += pagamentoAux.ValorPago;
+                        }
+                    }
+                }
+            }
+
+
+            if (string.IsNullOrEmpty(cobrancaPrint.NumeroAutorizacao))
+                return "";
+
+            Empresa empresa = EmpresaRepository.getInstance().GetById(idEmpresa, true).Result;  //pega empresa da venda
             empresa.Cnpj = Functions.FormatCpfCnpj(empresa.Cnpj);
             EmpresaPrint empresaPrint = (EmpresaPrint)empresa;
 
-            Cobrancas cobranca = venda.VendaCobranca[index];
-            CobrancaPrint cobrancaPrint = (CobrancaPrint)cobranca;
-
-            EspeciePagamento especiePagamento = EspeciePagamentoRepository.getInstance().GetById(cobranca.IdEspeciePagamento, true).Result;
+            EspeciePagamento especiePagamento = EspeciePagamentoRepository.getInstance().GetById(idEspeciePagamento, true).Result;
             EspeciePagamentoPrint especiePagamentoPrint = (EspeciePagamentoPrint)especiePagamento;
 
             if (string.IsNullOrEmpty(cobrancaPrint.NumeroAutorizacao))
@@ -675,7 +832,7 @@ namespace ibr.web.api.Data
 
             JsonPrintComprovantePagamentoNfce jsonPrintCredito = new JsonPrintComprovantePagamentoNfce()
             {
-                Venda = vendaPrint,
+                ComprovantePagamento = comprovantePagamentoNfcePrint,
                 Empresa = empresaPrint,
                 Cobranca = cobrancaPrint,
                 EspeciePagamento = especiePagamentoPrint,
@@ -803,6 +960,14 @@ namespace ibr.web.api.Data
                         case "REFERÊNCIA":
                             _identificadorBarras = item.Referencia != null ? item.Referencia.Ref : string.Empty;
                             break;
+                        case "COD FORNECEDOR":
+                            var refFornecedor = produto.Referencias != null && produto.Referencias.Find(x => x.Descricao == "COD FORNECEDOR" && x.IdFornecedor == produto.IdFornecedorAtual) != null
+                                    ? produto.Referencias.FindLast(x => x.Descricao == "COD FORNECEDOR" && x.IdFornecedor == produto.IdFornecedorAtual).Ref : string.Empty;
+
+                            _identificadorBarras = !string.IsNullOrEmpty(refFornecedor) ? refFornecedor 
+                                : produto.Referencias != null && produto.Referencias.Find(x => x.Descricao == "COD FORNECEDOR") != null
+                                ? produto.Referencias.FindLast(x => x.Descricao == "COD FORNECEDOR").Ref : string.Empty;
+                            break;
                         default:
                             break;
                     }
@@ -817,6 +982,14 @@ namespace ibr.web.api.Data
                             break;
                         case "REFERÊNCIA":
                             _identificadorTexto = item.Referencia != null ? item.Referencia.Ref : string.Empty;
+                            break;
+                        case "COD FORNECEDOR":
+                            var refFornecedor = produto.Referencias != null && produto.Referencias.Find(x => x.Descricao == "COD FORNECEDOR" && x.IdFornecedor == produto.IdFornecedorAtual) != null
+                                    ? produto.Referencias.FindLast(x => x.Descricao == "COD FORNECEDOR" && x.IdFornecedor == produto.IdFornecedorAtual).Ref : string.Empty;
+
+                            _identificadorTexto = !string.IsNullOrEmpty(refFornecedor) ? refFornecedor
+                                : produto.Referencias != null && produto.Referencias.Find(x => x.Descricao == "COD FORNECEDOR") != null
+                                ? produto.Referencias.FindLast(x => x.Descricao == "COD FORNECEDOR").Ref : string.Empty;
                             break;
                         default:
                             break;
@@ -840,7 +1013,7 @@ namespace ibr.web.api.Data
                         CodigoInterno = produto.Codigo,
                         ImagemProduto = produtoImagem == null ? null : produtoImagem.CodeBase64,
                         Tamanho = produto.Dimensao != null ? produto.Dimensao.Tamanho : "",
-                        DescricaoAdicional  = !string.IsNullOrEmpty(item.DescricaoAdicional) ? item.DescricaoAdicional : !string.IsNullOrEmpty(produto.DescricaoAdicional) ? produto.DescricaoAdicional : "",
+                        DescricaoAdicional = !string.IsNullOrEmpty(item.DescricaoAdicional) ? item.DescricaoAdicional : !string.IsNullOrEmpty(produto.DescricaoAdicional) ? produto.DescricaoAdicional : "",
                         DadosAdicionais = !string.IsNullOrEmpty(item.DadosAdicionais) ? item.DadosAdicionais : ""
                     });
                 }
@@ -976,14 +1149,14 @@ namespace ibr.web.api.Data
                 Terminal terminalCaixa = TerminalRepository.getInstance().GetByIdCaixa(movimentacaoCaixa.IdCaixa, true).Result;
                 //Busca todas as vendas correspondente ao período do caixa
                 string filtro = $"ilimitado=true&empresa={terminalCaixa.IdEmpresa}&terminal={terminalCaixa._id}&dataVendaInicial={movimentacaoCaixa.DataHoraAbertura}&dataVendaFinal={movimentacaoCaixa.DataHoraFechamento}";
-                List<Venda> listVendas = VendaRepository.getInstance().Find(userNovo, filtro).Result;                
-                
-                
+                List<Venda> listVendas = VendaRepository.getInstance().Find(userNovo, filtro).Result;
+
+
                 CondicaoPagamento condicaoPagamentoAux = new CondicaoPagamento();
 
                 foreach (Venda venda in listVendas)
                 {
-                    if(venda.DataHoraVenda >= movimentacaoCaixa.DataHoraAbertura && venda.DataHoraVenda <= movimentacaoCaixa.DataHoraFechamento)
+                    if (venda.DataHoraVenda >= movimentacaoCaixa.DataHoraAbertura && venda.DataHoraVenda <= movimentacaoCaixa.DataHoraFechamento)
                     {
                         if (venda.VendaCobranca.Count > 0)
                         {
@@ -996,7 +1169,7 @@ namespace ibr.web.api.Data
                             }
 
                             List<ContaReceber> listContaReceberVenda = new List<ContaReceber>();
-                            if (venda.FinanceiroGerado) 
+                            if (venda.FinanceiroGerado)
                             {
                                 listContaReceberVenda.OrderBy(x => x.Documento);
                                 listContaReceberVenda = ContaReceberRepository.getInstance().GetByIdVinculo(venda._id, true).Result;
@@ -1482,8 +1655,22 @@ namespace ibr.web.api.Data
             ClientePrint clientePrint = (ClientePrint)cliente;
 
             //OS Modelo - Equipamento
-            Equipamento equipamento = EquipamentoRepository.getInstance().GetById(ordemServico.IdEquipamento, true).Result;  //pega equipamento da ordem de servico
-            EquipamentoPrint equipamentoPrint = (EquipamentoPrint)equipamento;
+            EquipamentoPrint equipamentoPrint = null;
+            List<EquipamentoPrint> listEquipamentoPrint = new List<EquipamentoPrint>();
+            if (ordemServico.Equipamentos.Count > 0)
+            {
+                Equipamento equipamento = EquipamentoRepository.getInstance().GetById(ordemServico.Equipamentos[0].IdEquipamento, true).Result;  //pega equipamento da ordem de servico
+                equipamentoPrint = (EquipamentoPrint)equipamento;
+
+                foreach (var item in ordemServico.Equipamentos)
+                {
+                    equipamento = EquipamentoRepository.getInstance().GetById(item.IdEquipamento, true).Result;  //pega equipamento da ordem de servico
+                    var itemPrint = (EquipamentoPrint)equipamento;
+
+                    if (itemPrint != null)
+                        listEquipamentoPrint.Add(itemPrint);
+                }
+            }
 
             //OS Modelo - Ótica
             Receita receita = ReceitaRepository.getInstance().GetById(ordemServico.IdReceita, true).Result;  //pega receita da ordem de servico
@@ -1521,6 +1708,7 @@ namespace ibr.web.api.Data
                 RevisaoVeiculo = revisaoVeiculoPrint,
                 RevisaoVeiculoItem = listRevisaoVeiculoItemPrint,
                 Receita = receitaPrint,
+                ListaEquipamentos = listEquipamentoPrint
             };
 
             return new JavaScriptSerializer().Serialize(jsonPrintOrdemServico);
@@ -1545,6 +1733,8 @@ namespace ibr.web.api.Data
             Cliente cliente = ClienteRepository.getInstance().GetById(conta.IdCliente, true).Result;  //pega cliente
             ClientePrint clientePrint = (ClientePrint)cliente;
 
+            double valorSaldoTotalCliente = ContaReceberRepository.getInstance().GetValorTotalSaldoCliente(conta.IdCliente, conta.TokenOrganizacao).Result;
+
             List<PagamentoPrint> listPagamentoPrint = new List<PagamentoPrint>();  //pega os itens da venda
             if (conta != null && conta.Pagamentos != null && conta.Pagamentos.Count > 0)
             {
@@ -1563,7 +1753,7 @@ namespace ibr.web.api.Data
                 Pagamentos = listPagamentoPrint,
                 NumeroDePagamentos = listPagamentoPrint != null ? listPagamentoPrint.Count : 0,
                 ValorTotalExtenso = DoubleToExtenso.NumeroExtenso(((decimal)conta.ValorPago)),
-
+                ValorSaldoTotalCliente = valorSaldoTotalCliente
             };
 
             return new JavaScriptSerializer().Serialize(JsonPrintRecibo);
@@ -1648,6 +1838,8 @@ namespace ibr.web.api.Data
             Cliente cliente = ClienteRepository.getInstance().GetById(conta.IdCliente, true).Result;  //pega cliente da ordem de servico
             ClientePrint clientePrint = (ClientePrint)cliente;
 
+            double valorSaldoTotalCliente = ContaReceberRepository.getInstance().GetValorTotalSaldoCliente(conta.IdCliente, conta.TokenOrganizacao).Result;
+
             JsonPrintReciboContaReceber JsonPrintRecibo = new JsonPrintReciboContaReceber()
             {
                 ContaReceber = contaReceberPrint,
@@ -1662,6 +1854,7 @@ namespace ibr.web.api.Data
                 ValorSaldoTotal = conta.ValorSaldo,
                 ValorSaldoAbertoTotal = pagamentoPrint.ValorSaldoAberto,
                 ValorTotalExtenso = DoubleToExtenso.NumeroExtenso(((decimal)pagamentoPrint.ValorPago)),
+                ValorSaldoTotalCliente = valorSaldoTotalCliente
             };
 
             return new JavaScriptSerializer().Serialize(JsonPrintRecibo);
@@ -1669,7 +1862,7 @@ namespace ibr.web.api.Data
 
         private string GetJsonReciboContaReceberLote(string parametroIds)
         {
-            string[] idsRegistros = parametroIds.Split(";");
+            var idsRegistros = parametroIds.Split(";").Distinct().ToList();
 
             ContaReceber conta = new ContaReceber();
             List<PagamentoPrint> listPagamentos = new List<PagamentoPrint>();
@@ -1678,6 +1871,7 @@ namespace ibr.web.api.Data
             double valorTotalPago = 0;
             double valorSaldoTotal = 0;
             double valorSaldoAbertoTotal = 0;
+            double valorSaldoTotalCliente = 0;
 
             foreach (string idRegistro in idsRegistros)
             {
@@ -1686,25 +1880,35 @@ namespace ibr.web.api.Data
                     conta = ContaReceberRepository.getInstance().GetById(idRegistro, true).Result;  //pega a ordem de servico
                     ContaReceberPrint contaReceberPrint = (ContaReceberPrint)conta;
 
-                    PagamentoContaReceber pagamento = conta.Pagamentos.OrderByDescending(x => x.DataHoraPagamento).FirstOrDefault();
-                    PagamentoPrint pagamentoPrintAux = (PagamentoPrint)pagamento;
-                    pagamentoPrintAux.Documento = conta.Documento;
-                    pagamentoPrintAux.DataHoraVencimentoDocumento = conta.DataVencimento;
-                    pagamentoPrintAux.ValorTotalDocumento = conta.Valor;
-                    pagamentoPrintAux.ValorSaldoDocumento = conta.ValorSaldo;
-                    pagamentoPrintAux.ValorSaldoAberto = (conta.Valor + conta.ValorJuros - conta.ValorAbatimento) - conta.Pagamentos.Sum(pag => pag.ValorPago) + pagamento.ValorPago;
-                    listPagamentos.Add(pagamentoPrintAux);
+                    PagamentoContaReceber ultimoPagamento = conta.Pagamentos.OrderByDescending(x => x.DataHoraPagamento).FirstOrDefault();
+                    var pagamentos = conta.Pagamentos.Where(x => x.IdentificadorBaixa == ultimoPagamento.IdentificadorBaixa).ToList();
+                    var valorPagamentosAnteriores = conta.Pagamentos.Where(x => x.IdentificadorBaixa != ultimoPagamento.IdentificadorBaixa).Sum(pag => pag.ValorPago);
 
-                    valorTotalPago += pagamento.ValorPago;
+                    foreach (var pagamento in pagamentos)
+                    {
+                        PagamentoPrint pagamentoPrintAux = (PagamentoPrint)pagamento;
+                        pagamentoPrintAux.Documento = conta.Documento;
+                        pagamentoPrintAux.DataHoraVencimentoDocumento = conta.DataVencimento;
+                        pagamentoPrintAux.ValorTotalDocumento = conta.Valor;
+                        //pagamentoPrintAux.ValorSaldoDocumento = conta.ValorSaldo;
+                        pagamentoPrintAux.ValorSaldoDocumento = (conta.Valor + conta.ValorJuros - conta.ValorAbatimento) - valorPagamentosAnteriores - pagamento.ValorPago;
+                        //pagamentoPrintAux.ValorSaldoAberto = (conta.Valor + conta.ValorJuros - conta.ValorAbatimento) - conta.Pagamentos.Sum(pag => pag.ValorPago) + pagamento.ValorPago;
+                        pagamentoPrintAux.ValorSaldoAberto = (conta.Valor + conta.ValorJuros - conta.ValorAbatimento) - valorPagamentosAnteriores;
+
+                        listPagamentos.Add(pagamentoPrintAux);
+
+                        valorTotalPago += pagamento.ValorPago;
+                        valorPagamentosAnteriores += pagamento.ValorPago;
+
+                        int index = listPagamentosEspecie.FindIndex(pag => pag.EspeciePagamento.Equals(pagamentoPrintAux.EspeciePagamento));
+                        if (index == -1)
+                            listPagamentosEspecie.Add(new PagamentoPrint() { EspeciePagamento = pagamentoPrintAux.EspeciePagamento, ValorPago = pagamentoPrintAux.ValorPago });
+                        else
+                            listPagamentosEspecie[index].ValorPago += pagamentoPrintAux.ValorPago;
+                    }
                     valorTotal += conta.Valor;
                     valorSaldoTotal += conta.ValorSaldo;
-                    valorSaldoAbertoTotal += pagamentoPrintAux.ValorSaldoAberto;
-
-                    int index = listPagamentosEspecie.FindIndex(pag => pag.EspeciePagamento.Equals(pagamentoPrintAux.EspeciePagamento));
-                    if (index == -1)
-                        listPagamentosEspecie.Add(new PagamentoPrint() { EspeciePagamento = pagamentoPrintAux.EspeciePagamento, ValorPago = pagamentoPrintAux.ValorPago });
-                    else
-                        listPagamentosEspecie[index].ValorPago += pagamentoPrintAux.ValorPago;
+                    valorSaldoAbertoTotal += (conta.Valor + conta.ValorJuros - conta.ValorAbatimento) - valorPagamentosAnteriores;
                 }
             }
 
@@ -1716,6 +1920,8 @@ namespace ibr.web.api.Data
 
             Cliente cliente = ClienteRepository.getInstance().GetById(conta.IdCliente, true).Result;  //pega cliente da ordem de servico
             ClientePrint clientePrint = (ClientePrint)cliente;
+
+            valorSaldoTotalCliente = ContaReceberRepository.getInstance().GetValorTotalSaldoCliente(conta.IdCliente, conta.TokenOrganizacao).Result;
 
             JsonPrintReciboContaReceber JsonPrintRecibo = new JsonPrintReciboContaReceber()
             {
@@ -1729,6 +1935,7 @@ namespace ibr.web.api.Data
                 ValorSaldoTotal = valorSaldoTotal,
                 ValorSaldoAbertoTotal = valorSaldoAbertoTotal,
                 ValorTotalExtenso = DoubleToExtenso.NumeroExtenso(((decimal)valorTotalPago)),
+                ValorSaldoTotalCliente = valorSaldoTotalCliente,
             };
 
             return new JavaScriptSerializer().Serialize(JsonPrintRecibo);
@@ -1772,7 +1979,7 @@ namespace ibr.web.api.Data
         /// <summary>
         /// Cria o json de lista de contas a receber de um cliente
         /// </summary>
-        private string GetJsonContaReceberCliente(AuthenticatedUser _user, string aux)
+        private string GetJsonContaReceberCliente(AuthenticatedUser _user, string idRegistro, string aux)
         {
             AuthenticatedUser userNovo = AuthenticatedUser.NewInstance(_user);
 
@@ -1792,9 +1999,10 @@ namespace ibr.web.api.Data
             double valorAbatimentoTotal = 0;
             double valorTotal = 0;
 
-            listContaReceber = ContaReceberRepository.getInstance().Find(userNovo, aux).Result;
-
-            string idEmpresa = Functions.GetTextFromQueryParameter(aux, "empresa");
+            string parameters = aux + $"&empresa={idRegistro}";
+            listContaReceber = ContaReceberRepository.getInstance().Find(userNovo, parameters).Result;
+            //string idEmpresa = Functions.GetTextFromQueryParameter(aux, "empresa");
+            string idEmpresa = idRegistro;
             string idCliente = Functions.GetTextFromQueryParameter(aux, "cliente");
 
             if (listContaReceber.Count > 0 || !string.IsNullOrEmpty(idEmpresa))
@@ -1865,7 +2073,7 @@ namespace ibr.web.api.Data
             //Agrupa itens para romaneio
             foreach (CompraItem compraItem in compra.Itens)
             {
-               
+
                 //se inner de produto não for null e já possui o item com o código na lista soma quantidade
                 if (compraItem.InProduto != null && listCompraItemRomaneioPrint.Exists(item => item.Codigo == compraItem.InProduto?.Codigo))
                 {
@@ -1874,8 +2082,8 @@ namespace ibr.web.api.Data
                     {
                         if (item.Codigo == compraItem.InProduto.Codigo)
                         {
-                            item.Quantidade += Math.Round(compraItem.QuantidadeFinal, 4);
-                            
+                            item.Quantidade += Math.Round(compraItem.QuantidadeFinal, 4, MidpointRounding.AwayFromZero);
+
                         }
                     }
                 }
@@ -1893,10 +2101,17 @@ namespace ibr.web.api.Data
                         }
                     });
 
+                    if (prod.EstoquesDoProduto.Count > 0 && compra.IdLocalizacaoEstoque != null)
+                    {
+                        ProdutoEstoque estoqueProduto = prod.EstoquesDoProduto.Find(x => x.IdLocalizacaoEstoque.Equals(compra.IdLocalizacaoEstoque));
+                        if (estoqueProduto != null)
+                            item.IdentificadorEstoque = estoqueProduto.IdentificadorEstoque;
+                    }
+
 
                     listCompraItemRomaneioPrint.Add(item);
                 }
-                    
+
 
 
             }
@@ -1950,7 +2165,7 @@ namespace ibr.web.api.Data
                     listNfItemRomaneioPrint.ForEach(item =>
                     {
                         if (item.Codigo == nfItem.InProduto.Codigo)
-                            item.Quantidade += Math.Round(nfItem.Quantidade, 4);
+                            item.Quantidade += Math.Round(nfItem.Quantidade, 4, MidpointRounding.AwayFromZero);
                     });
                 }
                 else
@@ -2102,6 +2317,97 @@ namespace ibr.web.api.Data
         }
 
         /// <summary>
+        /// Cria o json de orçamento
+        /// </summary>
+        private string GetJsonServicoTerceirizado(string idRegistro)
+        {
+            ServicoTerceirizado servicoTerceirizado = ServicoTerceirizadoRepository.getInstance().GetById(idRegistro, true).Result;  //pega o orcamento
+            ServicoTerceirizadoPrint servicoTerceirizadoPrint = (ServicoTerceirizadoPrint)servicoTerceirizado;
+
+            Empresa empresa = EmpresaRepository.getInstance().GetById(servicoTerceirizado.IdEmpresa, true).Result;  //pega empresa
+            EmpresaPrint empresaPrint = (EmpresaPrint)empresa;
+
+            EmpresaImagem empresaImagem = EmpresaImagemRepository.getInstance().GetPrincipalByIdEmpresa(empresa._id).Result;  //pega imagem da empresa
+            empresaPrint.Imagem = empresaImagem == null ? null : empresaImagem.CodeBase64;
+
+            Fornecedor fornecedor = FornecedorRepository.getInstance().GetById(servicoTerceirizado.IdFornecedor, false).Result;
+            FornecedorPrint fornecedorPrint = (FornecedorPrint)fornecedor;
+
+            Funcionario funcionario = FuncionarioRepository.getInstance().GetById(servicoTerceirizado.IdFuncionario, false).Result;
+            FuncionarioPrint funcionarioPrint = (FuncionarioPrint)funcionario;
+
+            Cliente cliente = ClienteRepository.getInstance().GetById(servicoTerceirizado.IdCliente, true).Result;  //pega cliente do 
+            ClientePrint clientePrint = (ClientePrint)cliente;
+
+            // Veiculo
+            List<VeiculoPrint> listVeiculosPrint = new List<VeiculoPrint>(); 
+            foreach(var veiculo in servicoTerceirizado.Veiculos)
+            {
+                Veiculo retVeiculo = VeiculoRepository.getInstance().GetById(veiculo.idVeiculo, false).Result;
+                if (retVeiculo != null)
+                    listVeiculosPrint.Add((VeiculoPrint)retVeiculo);
+            }
+            // Equipamento
+            List<EquipamentoPrint> listEquipamentosPrint = new List<EquipamentoPrint>();
+            foreach (var equipamento in servicoTerceirizado.Equipamentos)
+            {
+                Equipamento retEquipamento = EquipamentoRepository.getInstance().GetById(equipamento.idEquipamento, false).Result;
+                if (retEquipamento != null)
+                    listEquipamentosPrint.Add((EquipamentoPrint)retEquipamento);
+            }
+
+            // Servicos
+            List<ServicoTerceirizadServicoItem> listServicos = new List<ServicoTerceirizadServicoItem>();
+            foreach (var servico in servicoTerceirizado.Servicos)
+            {
+                listServicos.Add(servico);
+            }
+            // Produtos
+            List<ServicoTerceirizadoProdutoItem> listProdutos = new List<ServicoTerceirizadoProdutoItem>();
+            foreach (var produto in servicoTerceirizado.Produtos)
+            {
+                listProdutos.Add(produto);
+            }
+
+            //Cobranças
+            List<CobrancaPrint> listCobrancaPrint = new List<CobrancaPrint>();  //pega os orcamentos-cobranças do orcamento
+            if (servicoTerceirizado.Cobrancas != null && servicoTerceirizado.Cobrancas.Count > 0)
+            {
+                foreach (Cobrancas cobranca in servicoTerceirizado.Cobrancas)
+                {
+                    listCobrancaPrint.Add((CobrancaPrint)cobranca);
+                }
+            }
+            //ContasPagar
+            List<ContaPagarPrint> listContasPagarPrint = new List<ContaPagarPrint>();
+            List<ContaPagar> listCpas = ContaPagarRepository.getInstance().GetByIdVinculo(idRegistro, false).Result;
+            if (listCpas.Count > 0)
+            {
+                foreach (ContaPagar cpa in listCpas)
+                {
+                    listContasPagarPrint.Add((ContaPagarPrint)cpa);
+                }
+            }
+
+            JsonPrintServicoTerceirizado jsonPrintServicoTerceirizado = new JsonPrintServicoTerceirizado()
+            {
+                ServicoTerceirizado = servicoTerceirizadoPrint,
+                Empresa = empresaPrint,
+                Fornecedor = fornecedorPrint,
+                Cliente = clientePrint,
+                Funcionario = funcionarioPrint,
+                Veiculos = listVeiculosPrint,
+                Equipamentos = listEquipamentosPrint,
+                Produtos = listProdutos,
+                Servicos = listServicos,
+                Cobrancas = listCobrancaPrint,
+                ContasPagar = listContasPagarPrint,
+            };
+
+            return new JavaScriptSerializer().Serialize(jsonPrintServicoTerceirizado);
+        }
+
+        /// <summary>
         /// Cria o json de romaneio plano transporte
         /// </summary>
         private string GetJsonTransferenciaEstoque(string idRegistro)
@@ -2118,7 +2424,6 @@ namespace ibr.web.api.Data
             EmpresaPrint empresaDestinoPrint = (EmpresaPrint)empresaDestino;
             //EmpresaImagem empresaDestinoImagem = EmpresaImagemRepository.getInstance().GetPrincipalByIdEmpresa(empresaDestino._id).Result;  
             //empresaDestinoPrint.Imagem = empresaDestinoImagem == null ? null : empresaDestinoImagem.CodeBase64;
-
 
             LocalizacaoEstoque localizacaoEstoqueOrigem = LocalizacaoEstoqueRepository.getInstance().GetById(transferenciaEstoque.IdLocalizacaoEstoqueOrigem, true).Result;
             LocalizacaoEstoquePrint localizacaoEstoqueOrigemPrint = (LocalizacaoEstoquePrint)localizacaoEstoqueOrigem;
@@ -2168,7 +2473,7 @@ namespace ibr.web.api.Data
                 && venda.IdStatus != gatilhoStatus.IdStatusVendaImpressa)
             {
                 venda.IdStatus = gatilhoStatus.IdStatusVendaImpressa;
-                var retVenda = VendaRepository.getInstance().Update(userNovo, venda, false, false).Result;
+                var retVenda = VendaRepository.getInstance().UpdateStatusVenda(userNovo, venda);
             }
 
             var retConfig = false;
@@ -2249,6 +2554,20 @@ namespace ibr.web.api.Data
                     listContaReceberPrint.Add((ContaReceberPrint)contaReceber);
                 }
             }
+
+            var vinculosOS = venda.Vinculos.Where(x => x.Proprietario == "OrdemServico");
+            var listOrdensServicoPrint = new List<OrdemServicoPrint>();
+
+            foreach (var vinculoOS in vinculosOS)
+            {
+                var ordemServico = OrdemServicoRepository.getInstance().GetById(vinculoOS.IdProprietario, true).Result; 
+                if (ordemServico != null)
+                {
+                    var ordemServicoPrint = (OrdemServicoPrint)ordemServico;
+                    listOrdensServicoPrint.Add(ordemServicoPrint);
+                }
+            }
+            
             JsonPrintVenda jsonPrintVenda = new JsonPrintVenda()
             {
                 Venda = vendaPrint,
@@ -2256,7 +2575,8 @@ namespace ibr.web.api.Data
                 Cliente = clientePrint,
                 VendaItem = listVendaItemPrint,
                 Cobranca = listCobrancaPrint,
-                ContaReceber = listContaReceberPrint
+                ContaReceber = listContaReceberPrint,
+                OrdensServico = listOrdensServicoPrint,
             };
 
             return new JavaScriptSerializer().Serialize(jsonPrintVenda);
@@ -2434,7 +2754,7 @@ namespace ibr.web.api.Data
 
         private class JsonPrintComprovantePagamentoNfce
         {
-            public VendaPrint Venda { get; set; }
+            public ComprovantePagamentoNfcePrint ComprovantePagamento { get; set; }
             public CobrancaPrint Cobranca { get; set; }
             public EmpresaPrint Empresa { get; set; }
             public EspeciePagamentoPrint EspeciePagamento { get; set; }
@@ -2619,6 +2939,7 @@ namespace ibr.web.api.Data
             public RevisaoVeiculoPrint RevisaoVeiculo { get; set; } // OS Autocenter
             public List<RevisaoVeiculoItemPrint> RevisaoVeiculoItem { get; set; } // OS Autocenter
             public ReceitaPrint Receita { get; set; } // OS Ótica
+            public List<EquipamentoPrint> ListaEquipamentos { get; set; }
         }
 
         /// <summary>
@@ -2633,6 +2954,7 @@ namespace ibr.web.api.Data
             public List<PagamentoPrint> Pagamentos { get; set; }
             public string ValorTotalExtenso { get; set; }
             public int NumeroDePagamentos { get; set; }
+            public double ValorSaldoTotalCliente { get; set; }
         }
 
         /// <summary>
@@ -2683,6 +3005,7 @@ namespace ibr.web.api.Data
             public double ValorSaldoTotal { get; set; }
             public double ValorSaldoAbertoTotal { get; set; } //Para impressão A4
             public string ValorTotalExtenso { get; set; }
+            public double ValorSaldoTotalCliente { get; set; } //Saldo total de todas as contas a receber do cliente
 
         }
         /// <summary>
@@ -2714,6 +3037,24 @@ namespace ibr.web.api.Data
         }
 
         /// <summary>
+        /// Classe Json Servico Terceirizado
+        /// </summary>
+        private class JsonPrintServicoTerceirizado
+        {
+            public ServicoTerceirizadoPrint ServicoTerceirizado{ get; set; }
+            public EmpresaPrint Empresa { get; set; }
+            public FornecedorPrint Fornecedor { get; set; }
+            public ClientePrint Cliente { get; set; }
+            public FuncionarioPrint Funcionario { get; set; }
+            public List<VeiculoPrint> Veiculos { get; set; }
+            public List<EquipamentoPrint> Equipamentos { get; set; }
+            public List<ServicoTerceirizadoProdutoItem> Produtos { get; set; }
+            public List<ServicoTerceirizadServicoItem> Servicos { get; set; }
+            public List<CobrancaPrint> Cobrancas { get; set; }
+            public List<ContaPagarPrint> ContasPagar { get; set; }
+        }
+
+        /// <summary>
         /// Classe Json Venda
         /// </summary>
         private class JsonPrintTransferenciaEstoque
@@ -2740,6 +3081,7 @@ namespace ibr.web.api.Data
             public List<VendaItemPrint> VendaItem { get; set; }
             public List<CobrancaPrint> Cobranca { get; set; }
             public List<ContaReceberPrint> ContaReceber { get; set; }
+            public List<OrdemServicoPrint> OrdensServico { get; set; }
         }
 
         /// <summary>
@@ -2766,6 +3108,7 @@ namespace ibr.web.api.Data
             public Email Email { get; set; }
             public Telefone Telefone { get; set; }
             public double SaldoDevedor { get; set; }
+            public List<Contato> Contatos { get; set; }
 
             //Usado na impressão térmica da venda, orçamento e contrato
             public string CpfOrCnpj { get; set; }
@@ -2785,7 +3128,8 @@ namespace ibr.web.api.Data
                     Telefone = obj.getTelefonePrincipal(),
                     Email = obj.getEmailPrincipal(),
                     CpfOrCnpj = obj.TipoPessoa == "JURÍDICA" ? "CNPJ" : "CPF",
-                    SaldoDevedor = 0
+                    SaldoDevedor = 0,
+                    Contatos = obj.Contatos
                 };
             }
         }
@@ -2870,6 +3214,13 @@ namespace ibr.web.api.Data
             public string UnidadeMedida { get; set; }
             public double ValorUnitarioCustoTotal { get; set; }
             public double ValorCustoTotal { get; set; }
+            public string IdentificadorEstoque { get; set; }
+            public string Aplicacoes { get; set; }
+            public string DadosExtras { get; set; }
+            public string DadosTecnicos { get; set; }
+            public string GrupoPreco { get; set; }
+            public string NumeroCA { get; set; }
+            public DateTime ValidadeCA { get; set; }
 
             public static explicit operator CompraItemPrint(CompraItem obj)
             {
@@ -2883,8 +3234,26 @@ namespace ibr.web.api.Data
                     UnidadeMedida = obj.InUnidadeMedida != null ? obj.InUnidadeMedida.Descricao : obj.UnidadeTributavel,
                     ValorUnitarioCustoTotal = obj.ValorUnitarioCustoTotal,
                     ValorCustoTotal = obj.ValorCustoTotal,
+                    Aplicacoes = obj.InProduto != null ? obj.InProduto.Aplicacoes : null,
+                    DadosExtras = obj.InProduto != null ? obj.InProduto.DadosExtras : null,
+                    DadosTecnicos = obj.InProduto != null ? obj.InProduto.DadosTecnicos : null,
+                    GrupoPreco = obj.InProduto != null && obj.InProduto.InGrupoPreco != null ? obj.InProduto.InGrupoPreco.Descricao : null,
+                    NumeroCA = obj.InProduto != null ? obj.InProduto.NumeroCA : null,
+                    ValidadeCA = obj.InProduto != null ? obj.InProduto.ValidadeCA : new DateTime(1, 1, 1),
                 };
             }
+        }
+
+        //COMPROVANTE DE PAGAMENTO USADO EM IMPRESSÕES
+        private class ComprovantePagamentoNfcePrint
+        {
+            public string Documento { get; set; }
+            public DateTime DataPagamento { get; set; }
+            public string Usuario { get; set; }
+            public string Terminal { get; set; }
+            public string TerminalSerialNumber { get; set; }
+            public string CardBrand { get; set; }
+            public string Holder { get; set; }
         }
 
         //CONTA PAGAR USADA EM IMPRESSÕES
@@ -3172,6 +3541,7 @@ namespace ibr.web.api.Data
             public string NumeroSerie { get; set; }
             public string Marca { get; set; }
             public string Modelo { get; set; }
+            public string Patrimonio { get; set; }
             public string DadosExtras { get; set; }
 
             public static explicit operator EquipamentoPrint(Equipamento obj)
@@ -3183,6 +3553,7 @@ namespace ibr.web.api.Data
                     NumeroSerie = obj.NumeroSerie,
                     Marca = obj.Marca,
                     Modelo = obj.Modelo,
+                    Patrimonio = obj.Patrimonio,
                     DadosExtras = obj.DadosExtras,
                 };
             }
@@ -3304,6 +3675,7 @@ namespace ibr.web.api.Data
             public FornecedorPrint Transportadora { get; set; }
             public VeiculoPrint Veiculo { get; set; }
             public Venda venda { get; set; }
+            public double ValorNf { get; set; }
 
             public static explicit operator MinutaDespachoPrint(Nf obj)
             {
@@ -3323,7 +3695,8 @@ namespace ibr.web.api.Data
                     MarcaVolume = obj.MarcaVolume,
                     NumeracaoVolume = obj.NumeracaoVolume,
                     PesoLiquidoVolume = obj.PesoBrutoVolume,
-                    PesoBrutoVolume = obj.PesoBrutoVolume
+                    PesoBrutoVolume = obj.PesoBrutoVolume,
+                    ValorNf = obj.ValorTotalNf
                 };
             }
         }
@@ -3382,7 +3755,7 @@ namespace ibr.web.api.Data
                     CodigoVenda = obj.CodigoVenda,
                     Funcionario = obj.InFuncionario.Nome,
                     Descricao = obj.Descricao,
-                    Pontos = Math.Round(obj.Pontos, 2),
+                    Pontos = Math.Round(obj.Pontos, 2, MidpointRounding.AwayFromZero),
                     Status = obj.Status,
                     DataMovimentacao = obj.DataMovimentacao.ToLocalTime(),
 
@@ -3481,6 +3854,12 @@ namespace ibr.web.api.Data
             public string UnidadeMedida { get; set; }
             public double ValorUnitario { get; set; }
             public double ValorTotal { get; set; }
+            public string Aplicacoes { get; set; }
+            public string DadosExtras { get; set; }
+            public string DadosTecnicos { get; set; }
+            public string GrupoPreco { get; set; }
+            public string NumeroCA { get; set; }
+            public DateTime ValidadeCA { get; set; }
 
             public static explicit operator NfItemPrint(NfItem obj)
             {
@@ -3494,6 +3873,12 @@ namespace ibr.web.api.Data
                     UnidadeMedida = obj.InUnidadeMedida != null ? obj.InUnidadeMedida.Descricao : obj.UnidadeMedida,
                     ValorUnitario = obj.ValorUnitario,
                     ValorTotal = obj.ValorTotalItem,
+                    Aplicacoes = obj.InProduto != null ? obj.InProduto.Aplicacoes : null,
+                    DadosExtras = obj.InProduto != null ? obj.InProduto.DadosExtras : null,
+                    DadosTecnicos = obj.InProduto != null ? obj.InProduto.DadosTecnicos : null,
+                    GrupoPreco = obj.InProduto != null && obj.InProduto.InGrupoPreco != null ? obj.InProduto.InGrupoPreco.Descricao : null,
+                    NumeroCA = obj.InProduto != null ? obj.InProduto.NumeroCA : null,
+                    ValidadeCA = obj.InProduto != null ? obj.InProduto.ValidadeCA : new DateTime(1, 1, 1),
                 };
             }
         }
@@ -3580,9 +3965,11 @@ namespace ibr.web.api.Data
         {
             public DateTime DataHoraOrcamento { get; set; }
             public DateTime DataHoraPrevisaoEntrega { get; set; }
+            public DateTime? DataHoraValidade { get; set; }
             public string Status { get; set; }
             public double ValorProdutos { get; set; }
             public double ValorServicos { get; set; }
+            public double ValorIpi { get; set; }
             public double ValorFrete { get; set; }
             public double ValorSeguro { get; set; }
             public double ValorOutrasDespesas { get; set; }
@@ -3603,8 +3990,12 @@ namespace ibr.web.api.Data
             public string ComplementoEntrega { get; set; }
             public string PontoReferenciaEntrega { get; set; }
             public string CepEntrega { get; set; }
+            public string ObservacaoEntrega { get; set; }
             public InBairro InBairroEntrega { get; set; }
             public InCidade InCidadeEntrega { get; set; }
+            public InVeiculo Veiculo { get; set; }
+            public double KmVeiculo { get; set; }
+            public InEquipamento Equipamento { get; set; }
 
             public static explicit operator OrcamentoPrint(Orcamento obj)
             {
@@ -3616,6 +4007,7 @@ namespace ibr.web.api.Data
                     Status = obj.Status,
                     ValorProdutos = obj.ValorProdutos,
                     ValorServicos = obj.ValorServicos,
+                    ValorIpi = obj.ValorIpi,
                     ValorFrete = obj.ValorFrete,
                     ValorSeguro = obj.ValorSeguro,
                     ValorOutrasDespesas = obj.ValorOutrasDespesas,
@@ -3624,18 +4016,23 @@ namespace ibr.web.api.Data
                     DadosAdicionais = obj.DadosAdicionais,
                     CodigoOrcamento = obj.CodigoOrcamento,
                     TituloOrcamento = obj.Titulo,
+                    ObservacaoEntrega = obj.ObservacaoEntrega,
                     Terminal = obj.InTerminal == null ? null : obj.InTerminal.Descricao,
                     Vendedor = obj.InFuncionario == null ? null : obj.InFuncionario.Nome,
                     Usuario = (obj.InFuncionario == null || obj.InFuncionario.InUsuario == null) ? null : obj.InFuncionario.InUsuario.Nome,
                     Sequencial = obj.Sequencial,
                     QtdeItens = obj.QtdeTotalItens,
-                    LogradouroEntrega = obj.LogradouroEntrega,     
-                    NumeroEntrega = obj.NumeroEntrega,        
-                    ComplementoEntrega = obj.ComplementoEntrega,    
+                    LogradouroEntrega = obj.LogradouroEntrega,
+                    NumeroEntrega = obj.NumeroEntrega,
+                    ComplementoEntrega = obj.ComplementoEntrega,
                     PontoReferenciaEntrega = obj.PontoReferenciaEntrega,
                     CepEntrega = obj.CepEntrega,
                     InBairroEntrega = obj.InBairroEntrega,
-                    InCidadeEntrega = obj.InCidadeEntrega
+                    InCidadeEntrega = obj.InCidadeEntrega,
+                    Veiculo = obj.InVeiculo,
+                    KmVeiculo = obj.KmVeiculo,
+                    Equipamento = obj.InEquipamento,
+                    DataHoraValidade = obj.DataHoraValidade.HasValue ? obj.DataHoraValidade.Value.ToLocalTime() : null,
                 };
             }
         }
@@ -3658,6 +4055,12 @@ namespace ibr.web.api.Data
             public double PercentualDescontoItem { get; set; }
             public double ValorTotal { get; set; }
             public double ValorTotalItem { get; set; }
+            public string Aplicacoes { get; set; }
+            public string DadosExtras { get; set; }
+            public string DadosTecnicos { get; set; }
+            public string GrupoPreco { get; set; }
+            public string NumeroCA { get; set; }
+            public DateTime ValidadeCA { get; set; }
 
             public static explicit operator ContratoItemPrint(ContratoItem obj)
             {
@@ -3679,6 +4082,12 @@ namespace ibr.web.api.Data
                     PercentualDescontoItem = obj.PercentualDescontoItem,
                     ValorTotal = obj.ValorTotal,
                     ValorTotalItem = obj.ValorTotalItem,
+                    Aplicacoes = obj.InProduto != null ? obj.InProduto.Aplicacoes : null,
+                    DadosExtras = obj.InProduto != null ? obj.InProduto.DadosExtras : null,
+                    DadosTecnicos = obj.InProduto != null ? obj.InProduto.DadosTecnicos : null,
+                    GrupoPreco = obj.InProduto != null && obj.InProduto.InGrupoPreco != null ? obj.InProduto.InGrupoPreco.Descricao : null,
+                    NumeroCA = obj.InProduto != null ? obj.InProduto.NumeroCA : null,
+                    ValidadeCA = obj.InProduto != null ? obj.InProduto.ValidadeCA : new DateTime(1, 1, 1),
                 };
             }
         }
@@ -3744,16 +4153,56 @@ namespace ibr.web.api.Data
             public double ValorDesconto { get; set; }
             public double ValorDescontoItem { get; set; }
             public double PercentualDescontoItem { get; set; }
+            public double ValorOutrasDespesas { get; set; }
+            public double ValorOutrasDespesasItem { get; set; }
+            public double PercentualOutrasDespesasItem { get; set; }
+            public double ValorIpi { get; set; }
             public double ValorTotal { get; set; }
             public double ValorTotalItem { get; set; }
             public string Ncm { get; set; }
             public List<VendaComponenteItem> Componentes { get; set; }
+            public string ImagemItem { get; set; }
+            public string Aplicacoes { get; set; }
+            public string DadosExtras { get; set; }
+            public string DadosTecnicos { get; set; }
+            public string GrupoPreco { get; set; }
+            public string NumeroCA { get; set; }
+            public DateTime ValidadeCA { get; set; }
+            public string Servico { get; set; }
+            public string Grupo { get; set; }
+            public double ValorIcms { get; set; }
+            public double ValorIcmsSt { get; set; }
+            public string IdentificadorEstoque { get; set; }
+            public string Referencia { get; set; }
 
             public static explicit operator OrcamentoItemPrint(OrcamentoItem obj)
             {
                 if (obj == null) return null;
 
-                var percentualDescontoItem = Math.Round((obj.ValorDescontoItem / obj.Quantidade) / obj.ValorUnitario * 100, 2);
+                // Pega Imagem Miniatura do produto
+                ProdutoImagem imagem = null;
+                if (!string.IsNullOrEmpty(obj.IdProduto))
+                {
+                   imagem = ProdutoImagemRepository.getInstance().GetTumbnailPrincipalByIdProduto(obj.IdProduto).Result;
+                }
+
+                var percentualDescontoItem = Math.Round((obj.ValorDescontoItem / obj.Quantidade) / obj.ValorUnitario * 100, 2, MidpointRounding.AwayFromZero); 
+                var percentualOutrasDespesasItem = Math.Round((obj.ValorOutrasDespesasItem / obj.Quantidade) / obj.ValorUnitario * 100, 2, MidpointRounding.AwayFromZero);
+                //var valorUnitarioComDesconto = Math.Round(obj.ValorUnitario * (1 - (percentualDescontoItem / 100)), 2, MidpointRounding.AwayFromZero);
+                var valorTotalComDesconto = Math.Round(obj.ValorTotalItem * (1 - (percentualDescontoItem / 100)), 2, MidpointRounding.AwayFromZero);
+
+                var componentes = obj.Componentes != null && obj.Componentes.Count > 0 ? obj.Componentes : new List<VendaComponenteItem>();
+                if (componentes.Count == 0) componentes.Add(new VendaComponenteItem() { Descricao = "SEM COMPONENTES" });
+
+                foreach (var componente in obj.Componentes)
+                {
+                    if (string.IsNullOrEmpty(componente.CodigoProduto))
+                    {
+                        var produto = ProdutoRepository.getInstance().GetById(componente.IdProduto, true).Result;
+                        componente.CodigoProduto = produto != null ? produto.Codigo : "";
+                    }
+                }
+
                 return new OrcamentoItemPrint()
                 {
                     Item = obj.Item,
@@ -3768,13 +4217,32 @@ namespace ibr.web.api.Data
                     ValorOriginal = obj.ValorOriginal,
                     ValorDesconto = obj.ValorDesconto,
                     ValorDescontoItem = obj.ValorDescontoItem,
+                    ValorIpi = obj.ValorIpi,
                     //PercentualDescontoItem = obj.PercentualDescontoItem,
                     PercentualDescontoItem = percentualDescontoItem,
+                    ValorOutrasDespesas = obj.ValorOutrasDespesas,
+                    ValorOutrasDespesasItem = obj.ValorOutrasDespesasItem,
+                    PercentualOutrasDespesasItem = percentualOutrasDespesasItem,
                     ValorTotal = obj.ValorTotal,
-                    ValorTotalItem = obj.ValorTotalItem,
+                    //ValorTotalItem = obj.ValorTotalItem,
+                    ValorTotalItem = valorTotalComDesconto,
                     DescricaoAdicional = obj.DescricaoAdicional,
                     Ncm = obj.InNcm == null ? null : obj.InNcm.Codigo,
-                    Componentes = obj.Componentes
+                    Componentes = componentes,
+                    ImagemItem = imagem != null && imagem.CodeBase64Thumbnail != null ? imagem.CodeBase64Thumbnail : null,
+                    Aplicacoes = obj.InProduto != null ? obj.InProduto.Aplicacoes : null,
+                    DadosExtras = obj.InProduto != null ? obj.InProduto.DadosExtras : null,
+                    DadosTecnicos = obj.InProduto != null ? obj.InProduto.DadosTecnicos : null,
+                    GrupoPreco = obj.InProduto != null && obj.InProduto.InGrupoPreco != null ? obj.InProduto.InGrupoPreco.Descricao : null,
+                    NumeroCA = obj.InProduto != null ? obj.InProduto.NumeroCA : null,
+                    ValidadeCA = obj.InProduto != null ? obj.InProduto.ValidadeCA : new DateTime(1, 1, 1),
+                    Servico = obj.InProduto != null && obj.InProduto.Servico ? "SERVIÇO" : String.Empty,
+                    Grupo = obj.InProduto.InGrupoProduto == null ? null : obj.InProduto.InGrupoProduto.Descricao,
+                    ValorIcms = obj.ValorIcms,
+                    ValorIcmsSt = obj.ValorIcmsSt,
+                    IdentificadorEstoque = obj.IdentificadorEstoque,
+                    Referencia = obj.InProduto != null && obj.InProduto.Referencias != null && obj.InProduto.Referencias.Count() > 0
+                        ? obj.InProduto.Referencias[0].Ref : ""
                 };
             }
         }
@@ -3840,6 +4308,12 @@ namespace ibr.web.api.Data
             public string Referencia { get; set; }
             public string UnidadeMedida { get; set; }
             public double Quantidade { get; set; }
+            public string Aplicacoes { get; set; }
+            public string DadosExtras { get; set; }
+            public string DadosTecnicos { get; set; }
+            public string GrupoPreco { get; set; }
+            public string NumeroCA { get; set; }
+            public DateTime ValidadeCA { get; set; }
 
             #region Valores
             public double ValorUnitarioCusto { get; set; }
@@ -3885,7 +4359,13 @@ namespace ibr.web.api.Data
                     ValorFrete = obj.ValorFrete,
                     ValorOutrasDespesas = obj.ValorOutrasDespesas,
                     ValorDesconto = obj.ValorDesconto,
-                    ValorDescontoItem = obj.ValorDescontoItem
+                    ValorDescontoItem = obj.ValorDescontoItem,
+                    Aplicacoes = obj.InProduto != null ? obj.InProduto.Aplicacoes : null,
+                    DadosExtras = obj.InProduto != null ? obj.InProduto.DadosExtras : null,
+                    DadosTecnicos = obj.InProduto != null ? obj.InProduto.DadosTecnicos : null,
+                    GrupoPreco = obj.InProduto != null && obj.InProduto.InGrupoPreco != null ? obj.InProduto.InGrupoPreco.Descricao : null,
+                    NumeroCA = obj.InProduto != null ? obj.InProduto.NumeroCA : null,
+                    ValidadeCA = obj.InProduto != null ? obj.InProduto.ValidadeCA : new DateTime(1, 1, 1),
                 };
 
                 return ordemCompraItemPrint;
@@ -3906,10 +4386,15 @@ namespace ibr.web.api.Data
             public string Terminal { get; set; }
             public string Funcionario { get; set; }
             public int Sequencial { get; set; }
+            public List<AcompanhamentoOp> Acompanhamentos { get; set; } = new List<AcompanhamentoOp>();
 
             public static explicit operator OrdemProducaoPrint(OrdemProducao obj)
             {
                 if (obj == null) return null;
+
+                var acompanhamentos = obj.Acompanhamentos != null && obj.Acompanhamentos.Count > 0 ? obj.Acompanhamentos : new List<AcompanhamentoOp>();
+                if (acompanhamentos.Count == 0) acompanhamentos.Add(new AcompanhamentoOp() { DadosAdicionais = "SEM ACOMPANHAMENTOS" });
+
                 return new OrdemProducaoPrint()
                 {
                     DataHoraOrdemProducao = obj.DataHoraOrdemProducao.ToLocalTime(),
@@ -3922,7 +4407,8 @@ namespace ibr.web.api.Data
                     Observacao = obj.Observacao,
                     Terminal = obj.InTerminal == null ? null : obj.InTerminal.Descricao,
                     Funcionario = obj.InFuncionario == null ? null : obj.InFuncionario.Nome,
-                    Sequencial = obj.Sequencial
+                    Sequencial = obj.Sequencial,
+                    Acompanhamentos = acompanhamentos
                 };
             }
         }
@@ -3935,6 +4421,7 @@ namespace ibr.web.api.Data
             public string Codigo { get; set; }
             public string CodigoBarras { get; set; }
             public string Referencia { get; set; }
+            public string ReferenciaFornecedor { get; set; }
             public string UnidadeMedida { get; set; }
             public string DadosTecnicos { get; set; }
             public double Quantidade { get; set; }
@@ -3952,8 +4439,10 @@ namespace ibr.web.api.Data
                     Descricao = (!string.IsNullOrEmpty(obj.Descricao) ? obj.Descricao : (obj.InProduto == null ? "" : obj.InProduto.Descricao)),
                     Codigo = obj.InProduto == null ? null : obj.InProduto.Codigo,
                     CodigoBarras = (obj.InProduto == null || obj.InProduto.CodigosBarras == null || obj.InProduto.CodigosBarras.Count == 0) ? null : obj.InProduto.CodigosBarras[0].Codigo,
-                    Referencia = (obj.InProduto == null || obj.InProduto.Referencias == null || obj.InProduto.Referencias.Count == 0) ? null : obj.InProduto.Referencias.Find(r => r.Descricao.ToUpper() == "REFERÊNCIA" || r.Descricao.ToUpper() == "REFERÊNCIA") != null ?
-                                  obj.InProduto.Referencias.Find(r => r.Descricao.ToUpper() == "REFERÊNCIA" || r.Descricao.ToUpper() == "REFERÊNCIA").Ref : obj.InProduto.Referencias[0].Ref,
+                    Referencia = (obj.InProduto == null || obj.InProduto.Referencias == null || obj.InProduto.Referencias.Count == 0) ? null : obj.InProduto.Referencias.Find(r => r.Descricao.ToUpper() == "REFERÊNCIA") != null ?
+                                  obj.InProduto.Referencias.Find(r => r.Descricao.ToUpper() == "REFERÊNCIA").Ref : obj.InProduto.Referencias[0].Ref,
+                    ReferenciaFornecedor = (obj.InProduto == null || obj.InProduto.Referencias == null || obj.InProduto.Referencias.Count == 0) ? null : obj.InProduto.Referencias.Find(r => r.Descricao.ToUpper() == "COD FORNECEDOR") != null ?
+                                  obj.InProduto.Referencias.Find(r => r.Descricao.ToUpper() == "COD FORNECEDOR").Ref : null,                    
                     UnidadeMedida = obj.InUnidadeMedida == null ? null : obj.InUnidadeMedida.Descricao,
                     DadosTecnicos = obj.InProduto != null && obj.InProduto?.DadosTecnicos != null ? obj.InProduto?.DadosTecnicos : null,
                     Quantidade = obj.Quantidade,
@@ -3984,9 +4473,11 @@ namespace ibr.web.api.Data
             public string Codigo { get; set; }
             public string CodigoBarras { get; set; }
             public string Referencia { get; set; }
+            public string ReferenciaFornecedor { get; set; }
             public string UnidadeMedida { get; set; }
             public string DadosTecnicos { get; set; }
             public double Quantidade { get; set; }
+            public double QuantidadePorItem { get; set; }
             public double ValorUnitario { get; set; }
             public double ValorTotal { get; set; }
             public string Etapa { get; set; }
@@ -4006,9 +4497,12 @@ namespace ibr.web.api.Data
                     CodigoBarras = (obj.InProduto == null || obj.InProduto.CodigosBarras == null || obj.InProduto.CodigosBarras.Count == 0) ? null : obj.InProduto.CodigosBarras[0].Codigo,
                     Referencia = (obj.InProduto == null || obj.InProduto.Referencias == null || obj.InProduto.Referencias.Count == 0) ? null : obj.InProduto.Referencias.Find(r => r.Descricao.ToUpper() == "REFERÊNCIA" || r.Descricao.ToUpper() == "REFERÊNCIA") != null ?
                                   obj.InProduto.Referencias.Find(r => r.Descricao.ToUpper() == "REFERÊNCIA" || r.Descricao.ToUpper() == "REFERÊNCIA").Ref : obj.InProduto.Referencias[0].Ref,
+                    ReferenciaFornecedor = (obj.InProduto == null || obj.InProduto.Referencias == null || obj.InProduto.Referencias.Count == 0) ? null : obj.InProduto.Referencias.Find(r => r.Descricao.ToUpper() == "COD FORNECEDOR") != null ?
+                                  obj.InProduto.Referencias.Find(r => r.Descricao.ToUpper() == "COD FORNECEDOR").Ref : null,
                     UnidadeMedida = obj.InUnidadeMedida == null ? null : obj.InUnidadeMedida.Descricao,
                     DadosTecnicos = obj.InProduto != null && obj.InProduto?.DadosTecnicos != null ? obj.InProduto?.DadosTecnicos : null,
                     Quantidade = obj.Quantidade,
+                    QuantidadePorItem = obj.QuantidadePorItem,
                     ValorUnitario = obj.ValorUnitario,
                     ValorTotal = obj.ValorTotal,
                     Etapa = obj.Etapa,
@@ -4038,10 +4532,17 @@ namespace ibr.web.api.Data
             public string Equipamento { get; set; }
             public string Funcionario { get; set; }
             public int Sequencial { get; set; }
+            public List<Acompanhamento> Acompanhamentos { get; set; } = new List<Acompanhamento>();
+            public List<Deslocamento> Deslocamentos { get; set; } = new List<Deslocamento>();
+            public string TipoAtendimento { get; set; }
 
             public static explicit operator OrdemServicoPrint(OrdemServico obj)
             {
                 if (obj == null) return null;
+
+                var acompanhamentos = obj.Acompanhamentos != null && obj.Acompanhamentos.Count > 0 ? obj.Acompanhamentos : new List<Acompanhamento>();
+                if (acompanhamentos.Count == 0) acompanhamentos.Add(new Acompanhamento() { DadosAdicionais = "SEM ACOMPANHAMENTOS" });;
+
                 return new OrdemServicoPrint()
                 {
                     DataOrdemServico = obj.DataOrdemServico.ToLocalTime(),
@@ -4056,7 +4557,10 @@ namespace ibr.web.api.Data
                     Observacao = obj.Observacao,
                     Terminal = obj.InTerminal == null ? null : obj.InTerminal.Descricao,
                     Funcionario = obj.InFuncionario == null ? null : obj.InFuncionario.Nome,
-                    Sequencial = obj.Sequencial
+                    Sequencial = obj.Sequencial,
+                    Acompanhamentos = acompanhamentos,
+                    Deslocamentos = obj.Deslocamentos,
+                    TipoAtendimento = obj.TipoAtendimento
                 };
             }
         }
@@ -4372,11 +4876,13 @@ namespace ibr.web.api.Data
             public DateTime DataHoraPrevisaoEntrega { get; set; }
             public double ValorProdutos { get; set; }
             public double ValorServicos { get; set; }
+            public double ValorIpi { get; set; }
             public double ValorFrete { get; set; }
             public double ValorSeguro { get; set; }
             public double ValorOutrasDespesas { get; set; }
             public double ValorDesconto { get; set; }
             public double ValorTotal { get; set; }
+            public string ValorTotalExtenso { get; set; }
             public double ValorVendaPorEspeciePagamento { get; set; } //Atributo utilizado para romaneio agrupado por espécie de pagamento
             public string DadosAdicionais { get; set; }
             public string ObservacaoEntrega { get; set; }
@@ -4384,6 +4890,7 @@ namespace ibr.web.api.Data
             public string CodigoVenda { get; set; }
             public string Terminal { get; set; }
             public string Vendedor { get; set; }
+            public string Titulo { get; set; }
             public string Usuario { get; set; }
             public string Status { get; set; }
             public int Sequencial { get; set; }
@@ -4392,7 +4899,12 @@ namespace ibr.web.api.Data
             public double PesoTotalVenda { get; set; }
             public string TelefoneVendedor { get; set; }
             public double PontosFidelidade { get; set; }
+            public string Servico { get; set; }
             public List<Cobrancas> VendaCobranca { get; set; }
+            public InVeiculo Veiculo { get; set; }
+            public double KmVeiculo { get; set; }
+            public InEquipamento Equipamento { get; set; }
+            public string Tecnico { get; set; }
 
             public static explicit operator VendaPrint(Venda obj)
             {
@@ -4403,11 +4915,13 @@ namespace ibr.web.api.Data
                     DataHoraPrevisaoEntrega = obj.DataHoraPrevisaoEntrega.ToLocalTime(),
                     ValorProdutos = obj.ValorProdutos,
                     ValorServicos = obj.ValorServicos,
+                    ValorIpi = obj.ValorIpi,
                     ValorFrete = obj.ValorFrete,
                     ValorSeguro = obj.ValorSeguro,
                     ValorOutrasDespesas = obj.ValorOutrasDespesas,
                     ValorDesconto = obj.ValorDesconto,
                     ValorTotal = obj.ValorTotal,
+                    Titulo = obj.Titulo,
                     DadosAdicionais = obj.DadosAdicionais,
                     ObservacaoEntrega = obj.ObservacaoEntrega,
                     Consignada = obj.Consignada,
@@ -4422,6 +4936,51 @@ namespace ibr.web.api.Data
                     PesoTotalVenda = obj.Itens.Sum(x => x.InProduto.PesoProduto * x.Quantidade),
                     PontosFidelidade = obj.PontosFidelidade,
                     VendaCobranca = obj.VendaCobranca,
+                    Veiculo = obj.InVeiculo,
+                    KmVeiculo = obj.KmVeiculo,
+                    Equipamento = obj.InEquipamento,
+                    ValorTotalExtenso = DoubleToExtenso.NumeroExtenso(((decimal)obj.ValorTotal)),
+                    Tecnico = obj.InTecnico == null  ? null : obj.InTecnico.Nome
+                };
+            }
+        }
+
+        //SERVICO TERCEIRIZADO USADO EM IMPRESSÕES
+        private class ServicoTerceirizadoPrint
+        {
+            public DateTime DataHoraEmissao { get; set; }
+            public DateTime DataHoraPrevisaoEntrega { get; set; }
+            public DateTime? DataHoraEntrega { get; set; }
+            public string CodigoServicoTerceirizado { get; set; }
+            public int Sequencial { get; set; }
+            public string Status { get; set; }
+            public string Descricao { get; set; }
+            public string DadosAdicionais { get; set; }
+            public string Segmento { get; set; }
+            public bool FinanceiroGerado { get; set; }
+            public double QtdeTotalItensServicos { get; set; }
+            public double QtdeTotalItensProdutos { get; set; }
+            public double ValorServicos { get; set; }
+            public double ValorTotal { get; set; }
+
+
+            public static explicit operator ServicoTerceirizadoPrint(ServicoTerceirizado obj)
+            {
+                if (obj == null) return null;
+                return new ServicoTerceirizadoPrint()
+                {
+                    DataHoraEmissao = obj.DataHoraEmissao.ToLocalTime(),
+                    DataHoraPrevisaoEntrega = obj.DataHoraPrevisaoEntrega.ToLocalTime(),
+                    DataHoraEntrega = obj.DataHoraEntrega,
+                    CodigoServicoTerceirizado = obj.CodigoServicoTerceirizado,
+                    Sequencial = obj.Sequencial,
+                    Status = obj.Status,
+                    Descricao = obj.Descricao,
+                    Segmento = obj.Segmento,
+                    FinanceiroGerado = obj.FinanceiroGerado,
+                    QtdeTotalItensServicos = obj.QtdeTotalItensServicos,
+                    QtdeTotalItensProdutos = obj.QtdeTotalItensProdutos,
+                    ValorTotal = obj.ValorTotal,
                 };
             }
         }
@@ -4446,19 +5005,46 @@ namespace ibr.web.api.Data
             public double ValorDesconto { get; set; }
             public double ValorDescontoItem { get; set; }
             public double PercentualDescontoItem { get; set; }
+            public double ValorOutrasDespesas { get; set; }
+            public double ValorOutrasDespesasItem { get; set; }
+            public double PercentualOutrasDespesasItem { get; set; }
+            public double ValorIpi { get; set; }
             public double ValorTotal { get; set; }
             public double ValorTotalItem { get; set; }
             public double PesoUnitarioLiquidoProduto { get; set; }
             public double PesoUnitarioProduto { get; set; }
             public string IdentificadorEstoque { get; set; }
+            public string Aplicacoes { get; set; }
+            public string DadosExtras { get; set; }
+            public string DadosTecnicos { get; set; }
+            public string GrupoPreco { get; set; }
+            public string NumeroCA { get; set; }
+            public DateTime ValidadeCA { get; set; }
+            public string Servico { get; set; }
             public List<VendaComponenteItem> Componentes { get; set; }
+            public double ValorIcms { get; set; }
+            public double ValorIcmsSt { get; set; }
+            public double Comprimento { get; set; }
 
             public static explicit operator VendaItemPrint(VendaItem obj)
             {
                 if (obj == null) return null;
-                var percentualDescontoItem = Math.Round((obj.ValorDescontoItem / obj.Quantidade) / obj.ValorUnitario * 100, 2);
-                var valorUnitarioComDesconto = Math.Round(obj.ValorUnitario * (1 - (percentualDescontoItem / 100)), 2);
-                var valorTotalComDesconto = Math.Round(obj.ValorTotalItem * (1 - (percentualDescontoItem / 100)), 2);
+                var percentualDescontoItem = Math.Round((obj.ValorDescontoItem / obj.Quantidade) / obj.ValorUnitario * 100, 2, MidpointRounding.AwayFromZero);
+                var percentualOutrasDespesasItem = Math.Round((obj.ValorOutrasDespesasItem / obj.Quantidade) / obj.ValorUnitario * 100, 2, MidpointRounding.AwayFromZero);
+                var valorUnitarioComDesconto = Math.Round(obj.ValorUnitario * (1 - (percentualDescontoItem / 100)), 2, MidpointRounding.AwayFromZero);
+                var valorTotalComDesconto = Math.Round(obj.ValorTotalItem * (1 - (percentualDescontoItem / 100)), 2, MidpointRounding.AwayFromZero);
+
+                var componentes = obj.Componentes != null && obj.Componentes.Count > 0 ? obj.Componentes : new List<VendaComponenteItem>();
+                if (componentes.Count == 0) componentes.Add(new VendaComponenteItem() { Descricao = "SEM COMPONENTES" });
+
+                foreach (var componente in obj.Componentes)
+                {
+                    if (string.IsNullOrEmpty(componente.CodigoProduto))
+                    {
+                        var produto = ProdutoRepository.getInstance().GetById(componente.IdProduto, true).Result;
+                        componente.CodigoProduto = produto != null ? produto.Codigo : "";
+                    }
+                }
 
                 return new VendaItemPrint()
                 {
@@ -4479,8 +5065,12 @@ namespace ibr.web.api.Data
                     ValorOriginal = obj.ValorOriginal,
                     ValorDesconto = obj.ValorDesconto,
                     ValorDescontoItem = obj.ValorDescontoItem,
-                    //PercentualDescontoItem = obj.PercentualDescontoItem,
                     PercentualDescontoItem = percentualDescontoItem,
+                    ValorOutrasDespesas = obj.ValorOutrasDespesas,
+                    ValorOutrasDespesasItem = obj.ValorOutrasDespesasItem,
+                    PercentualOutrasDespesasItem = percentualOutrasDespesasItem,
+                    ValorIpi = obj.ValorIpi,
+                    //PercentualDescontoItem = obj.PercentualDescontoItem,
                     ValorTotal = obj.ValorTotal,
                     //ValorTotalItem = obj.ValorTotalItem,
                     ValorTotalItem = valorTotalComDesconto,
@@ -4488,7 +5078,17 @@ namespace ibr.web.api.Data
                     PesoUnitarioProduto = obj.InProduto == null ? 0 : obj.InProduto.PesoProduto,
                     IdentificadorEstoque = obj.IdentificadorEstoque,
                     DescricaoAdicional = obj.DescricaoAdicional,
-                    Componentes = obj.Componentes
+                    Componentes = componentes,
+                    Aplicacoes = obj.InProduto != null ? obj.InProduto.Aplicacoes : null,
+                    DadosExtras = obj.InProduto != null ? obj.InProduto.DadosExtras : null,
+                    DadosTecnicos = obj.InProduto != null ? obj.InProduto.DadosTecnicos : null,
+                    GrupoPreco = obj.InProduto != null && obj.InProduto.InGrupoPreco != null ? obj.InProduto.InGrupoPreco.Descricao : null,
+                    NumeroCA = obj.InProduto != null ? obj.InProduto.NumeroCA : null,
+                    ValidadeCA = obj.InProduto != null ? obj.InProduto.ValidadeCA : new DateTime(),
+                    Servico = obj.InProduto != null && obj.InProduto.Servico ? "SERVIÇO" : String.Empty,
+                    ValorIcms = obj.ValorIcms,
+                    ValorIcmsSt = obj.ValorIcmsSt,
+                    Comprimento = obj.Comprimento
                 };
             }
         }
@@ -4579,7 +5179,7 @@ namespace ibr.web.api.Data
 
             public DestinatarioPrint(Cliente objCliente, Fornecedor objFornecedor)
             {
-                if(objCliente != null && objFornecedor == null)
+                if (objCliente != null && objFornecedor == null)
                 {
                     NomeRazaoSocial = objCliente.NomeRazaoSocial;
                     ApelidoNomeFantasia = objCliente.ApelidoNomeFantasia;
@@ -4592,7 +5192,7 @@ namespace ibr.web.api.Data
                     Email = objCliente.getEmailPrincipal();
                     SaldoDevedor = 0;
                 }
-                else if(objCliente == null && objFornecedor != null)
+                else if (objCliente == null && objFornecedor != null)
                 {
                     NomeRazaoSocial = objFornecedor.NomeRazaoSocial;
                     ApelidoNomeFantasia = objFornecedor.ApelidoNomeFantasia;
@@ -4646,8 +5246,8 @@ namespace ibr.web.api.Data
         {
             try
             {
-                Etiqueta etiqueta = EtiquetaRepository.getInstance().GetById(idRegistro, true).Result;  //pega as definições de etiqueta do user logado
-                EtiquetaLayout etiquetaLayout = EtiquetaLayoutRepository.getInstance().GetById(etiqueta.IdLayoutEtiquetaPadrao, true).Result;  //pega cadastro da etiqueta layout
+                Etiqueta etiqueta = await EtiquetaRepository.getInstance().GetById(idRegistro, true);  //pega as definições de etiqueta do user logado
+                EtiquetaLayout etiquetaLayout = await EtiquetaLayoutRepository.getInstance().GetById(etiqueta.IdLayoutEtiquetaPadrao, true);  //pega cadastro da etiqueta layout
 
                 using (MemoryStream ms = new MemoryStream())
                 using (StreamWriter sw = new StreamWriter(ms))
@@ -4846,7 +5446,7 @@ namespace ibr.web.api.Data
                         {
                             prefixo = "A";
 
-                            if (def.TipoCampo.Equals("CAMPO LIVRE"))
+                            if (def.TipoCampo.Equals("CAMPO LIVRE") || def.TipoCampo.Equals("CAMPO IMAGEM"))
                                 textoEtiq = def.Dados;
 
                             else if (def.TipoCampo.Equals("CAMPO DE DADOS"))
@@ -4855,18 +5455,29 @@ namespace ibr.web.api.Data
                                 textoEtiq = item.GetType().GetProperty(def.Dados).GetValue(item, null).ToString();
                             }
 
-                            //faz o corte da string com posição inicial
-                            textoEtiq = textoEtiq.Substring(def.InicioCaracteresLinha - 1);
-                            //faz o corte da string com quantidade de caracteres
-                            textoEtiq = textoEtiq.Substring(0, textoEtiq.Length < def.MaximoCaracteresLinha ? textoEtiq.Length : (textoEtiq.Length > def.MaximoCaracteresLinha ? def.MaximoCaracteresLinha : textoEtiq.Length));
+                            if (textoEtiq.Length >= def.InicioCaracteresLinha)
+                            {
+                                //faz o corte da string com posição inicial
+                                textoEtiq = textoEtiq.Substring(def.InicioCaracteresLinha - 1);
+                                //faz o corte da string com quantidade de caracteres
+                                textoEtiq = textoEtiq.Substring(0, textoEtiq.Length < def.MaximoCaracteresLinha ? textoEtiq.Length : (textoEtiq.Length > def.MaximoCaracteresLinha ? def.MaximoCaracteresLinha : textoEtiq.Length));
 
-                            if (colAtual == 1)  //se for a coluna 1 não tem deslocamento eixo X
-                                distXColAtual = 0;
-                            else  //porém se for coluna 2 ou superior, tem o deslocamento da impressão entre elas
-                                distXColAtual = (colAtual - 1) * etiquetaLayout.DistanciaColunasBobina;
+                                if (colAtual == 1)  //se for a coluna 1 não tem deslocamento eixo X
+                                    distXColAtual = 0;
+                                else  //porém se for coluna 2 ou superior, tem o deslocamento da impressão entre elas
+                                    distXColAtual = (colAtual - 1) * etiquetaLayout.DistanciaColunasBobina;
 
-                            //junta as informações formatação, posição Y, posição X e adiciona no arquivo
-                            sw.WriteLine($"{prefixo}{(def.PosicaoEixoX + distXColAtual).ToString()},{def.PosicaoEixoY.ToString()},{def.Formatacao.Replace(" ", "")},\"{textoEtiq}\"");
+                                if (def.TipoCampo.Equals("CAMPO IMAGEM"))
+                                {
+                                    // para impressão do logo precisa formatação antes das posições
+                                    sw.WriteLine($"{def.Formatacao.Replace(" ", "")}{(def.PosicaoEixoX + distXColAtual).ToString()},{def.PosicaoEixoY.ToString()},\"{textoEtiq}\"");
+                                }
+                                else
+                                {
+                                    //junta as informações formatação, posição Y, posição X e adiciona no arquivo
+                                    sw.WriteLine($"{prefixo}{(def.PosicaoEixoX + distXColAtual).ToString()},{def.PosicaoEixoY.ToString()},{def.Formatacao.Replace(" ", "")},\"{textoEtiq}\"");
+                                }
+                            }
                         }
 
                         if (colAtual == etiquetaLayout.QuantidadeColunasBobina || lastItem.Equals(item))  //só imprime comandos finais na coluna máxima ou se for último registro
