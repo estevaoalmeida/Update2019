@@ -1,304 +1,56 @@
-using DevExpress.AspNetCore.Reporting.QueryBuilder;
-using DevExpress.AspNetCore.Reporting.QueryBuilder.Native.Services;
-using DevExpress.AspNetCore.Reporting.ReportDesigner;
-using DevExpress.AspNetCore.Reporting.ReportDesigner.Native.Services;
-using DevExpress.AspNetCore.Reporting.WebDocumentViewer;
-using DevExpress.AspNetCore.Reporting.WebDocumentViewer.Native.Services;
-using DevExpress.DataAccess.ObjectBinding;
-using DevExpress.XtraPrinting;
-using DevExpress.XtraReports.UI;
-using DevExpress.XtraReports.Web.ReportDesigner;
-using ibr.web.api.Infra;
-using ibr.web.api.Interfaces;
-using ibr.web.api.Models;
-using ibr.web.api.Models.Etiqueta;
-using ibr.web.api.Models.Security;
-using ibr.web.api.Tools;
-using LoggerService;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Collections.Generic;
-using System.Drawing.Printing;
-using System.IO;
-using System.Threading.Tasks;
-using ibr.web.api.Data;
-using PdfSharpCore.Pdf;
-using PdfSharpCore.Pdf.IO;
-
-namespace ibr.web.api.Controllers.Report
-{
-    /// <summary>
-    /// Controlador API de Relatorio
-    /// </summary>
-    [Produces("application/json")]
-    [Route("api/v1/relatorio")]
-    public class ReportController : Controller
-    {
-        private readonly AuthenticatedUser _user;
-
-        /// <summary>
-        /// Construtor com dependências
-        /// </summary>
-        public ReportController(AuthenticatedUser user)
-        {
-
-            _user = user;
-        }
-
-        /// <summary>
-        /// Lista os relatórios cadastrados para a Organização do Usuário que solicitou a ação
-        /// </summary>
-        [NoCache]
-        [HttpGet]
-        public async Task<IActionResult> GetAll()
-        {
-            //cadastrados personalizados
-            List<ImpressaoPersonalizada> impressaoPersonalizadas = await ReportRepository.getInstance().GetAll(_user);
-            return Ok(impressaoPersonalizadas);
-        }
-
-        /// <summary>
-        /// Deleta da base um modelo de impressao cadastrado
-        /// </summary>
-        /// <param name="id">Id a ser deletado</param>
-        [HttpDelete("{id:length(24)}")]
-        public async Task<IActionResult> Delete(string id)
-        {
-            if (string.IsNullOrEmpty(id))
-            {
-                LoggerManager.getInstance().LogError($"Id do modelo de impressão recebido está null -> Access: {_user.IdentityToken}");
-                return BadRequest(new { status = "failed", message = "Id do modelo de impressão está null" });
-            }
-
-            ImpressaoPersonalizada dbImpressaoPersonalizadas = await ReportRepository.getInstance().GetById(_user, id, false);
-            if (dbImpressaoPersonalizadas == null)
-            {
-                LoggerManager.getInstance().LogError($" Modelo de impressão personalizado não localizada na base -> Access: {_user.IdentityToken}");
-                return BadRequest(new { status = "failed", message = "Modelo de impressão personalizado não localizada na base" });
-            }
-
-            dbImpressaoPersonalizadas.TokenOrganizacao = _user.TokenOrganizacao;
-
-            try
-            {
-                await ReportRepository.getInstance().Delete(_user, dbImpressaoPersonalizadas);
-                return Ok(new { status = "success", message = "Modelo de impressão deletado com sucesso" });
-            }
-            catch (Exception ex)
-            {
-                LoggerManager.getInstance().LogError($"Não foi possível deletar o modelo de impressão Id {id} -> Access: {_user.IdentityToken}");
-                return StatusCode(422, new { status = "failed", message = "Não foi possível deletar o modelo de impressão" });
-            }
-        }
-
-        [ApiExplorerSettings(IgnoreApi = true)]
-        [HttpGet("gerar")]
-        public async Task<IActionResult> Export()
-        {
-            //pega os params pra saber o que está sendo requisitado
-            string paramExtensao = Functions.GetTextFromQueryParameter(Request.QueryString.ToString(), "extensao");  //extensão que deseja retornar o arquivo
-            string paramTipoImpressao = Functions.GetTextFromQueryParameter(Request.QueryString.ToString(), "tipoImpressao");  //tipo de impressão sendo impressa
-            string paramModeloImpressao = Functions.GetTextFromQueryParameter(Request.QueryString.ToString(), "modeloImpressao");  //modelo sendo impresso
-            string paramIdRegistro = Functions.GetTextFromQueryParameter(Request.QueryString.ToString(), "idRegistro");  //id do registro sendo impresso
-            string paramIdsRegistros = Functions.GetTextFromQueryParameter(Request.QueryString.ToString(), "idsRegistros");  //id dos registros que estão sendo impressos agrupados (pagamentos feito na baixa)
-            string paramOrigemRegistro = Functions.GetTextFromQueryParameter(Request.QueryString.ToString(), "origemRegistro");  //origem do registro sendo impresso, usado quando pode vir de origens diferentes (ex.: um carnê pode ser impresso da venda ou da nota)
-
-            //parametros para relatórios gerais
-            string paramIdEmpresa = Functions.GetTextFromQueryParameter(Request.QueryString.ToString(), "idEmpresa");
-            string paramIdTabelaPreco = Functions.GetTextFromQueryParameter(Request.QueryString.ToString(), "idTabelaPreco");
-            string paramIdLocalizacaoEstoque = Functions.GetTextFromQueryParameter(Request.QueryString.ToString(), "idLocalizacaoEstoque");
-
-            //parametro especifico
-            string paramAuxiliar = Functions.GetTextFromQueryParameter(Request.QueryString.ToString(), "aux");
-            
-            if (paramModeloImpressao.Equals("MOVIMENTACAO CAIXA A4 DETALHADO COM VENDAS"))
-                paramAuxiliar = "C/ VENDAS";
-
-            XtraReport report = ReportRepository.getInstance().GetXtraReport(_user.TokenOrganizacao, paramTipoImpressao, paramModeloImpressao);
-            report.DataSource = ReportRepository.getInstance().GetJson(_user, paramTipoImpressao, paramIdRegistro, paramOrigemRegistro, paramIdEmpresa, paramIdTabelaPreco, paramIdLocalizacaoEstoque, paramAuxiliar);  //monta o json do relatório
-
-            using (MemoryStream ms = new MemoryStream())
-            {
-                switch (paramExtensao.ToLower().Trim())
-                {
-                    case "pdf":
-                        report.ExportToPdf(ms);
-                        break;
-                    case "docx":
-                        report.ExportToDocx(ms);
-                        break;
-                    case "xls":
-                        report.ExportToXls(ms);
-                        break;
-                    case "xlsx":
-                        report.ExportToXlsx(ms);
-                        break;
-                    case "rtf":
-                        report.ExportToRtf(ms);
-                        break;
-                    case "mht":
-                        report.ExportToMht(ms);
-                        break;
-                    case "html":
-                        report.ExportToHtml(ms);
-                        break;
-                    case "txt":
-                        report.ExportToText(ms);
-                        break;
-                    case "csv":
-                        report.ExportToCsv(ms);
-                        break;
-                    case "png":
-                        report.ExportToImage(ms, new ImageExportOptions() { Format = System.Drawing.Imaging.ImageFormat.Png });
-                        break;
-                }
-                
-                return Ok(Convert.ToBase64String(ms.ToArray()));
-            }
-        }
-
-        [ApiExplorerSettings(IgnoreApi = true)]
-        [HttpPost("gerarLote")]
-        public async Task<IActionResult> GerarLote([FromBody] List<string> listIds)
-        {
-            if (listIds == null || listIds.Count < 1)
-            {
-                return BadRequest(new { status = "failed", message = "Nenhum id de registro recebido" });
-            }
-
-            try
-            {
-                //pega os params pra saber o que está sendo requisitado
-                string paramExtensao = Functions.GetTextFromQueryParameter(Request.QueryString.ToString(), "extensao");  //extensão que deseja retornar o arquivo
-                string paramTipoImpressao = Functions.GetTextFromQueryParameter(Request.QueryString.ToString(), "tipoImpressao");  //tipo de impressão sendo impressa
-                string paramModeloImpressao = Functions.GetTextFromQueryParameter(Request.QueryString.ToString(), "modeloImpressao");  //modelo sendo impresso
-                string paramOrigemRegistro = Functions.GetTextFromQueryParameter(Request.QueryString.ToString(), "origemRegistro");  //origem do registro sendo impresso, usado quando pode vir de origens diferentes (ex.: um carnê pode ser impresso da venda ou da nota)
-
-                //parametros para relatórios gerais
-                string paramIdEmpresa = Functions.GetTextFromQueryParameter(Request.QueryString.ToString(), "idEmpresa");
-                string paramIdTabelaPreco = Functions.GetTextFromQueryParameter(Request.QueryString.ToString(), "idTabelaPreco");
-                string paramIdLocalizacaoEstoque = Functions.GetTextFromQueryParameter(Request.QueryString.ToString(), "idLocalizacaoEstoque");
-
-                //parametro especifico
-                string paramAuxiliar = Functions.GetTextFromQueryParameter(Request.QueryString.ToString(), "aux");
-
-                List<string> listBase64String = new List<string>();
-                List<PdfDocument> listPdfs = new List<PdfDocument>();
-                PdfDocument pdf = new PdfDocument();
-                string base64String = "";
-                bool isPdf = false;
-
-                foreach (var id in listIds)
-                {
-                    XtraReport report = ReportRepository.getInstance().GetXtraReport(_user.TokenOrganizacao, paramTipoImpressao, paramModeloImpressao);
-                    report.DataSource = ReportRepository.getInstance().GetJson(_user, paramTipoImpressao, id, paramOrigemRegistro, paramIdEmpresa, paramIdTabelaPreco, paramIdLocalizacaoEstoque, paramAuxiliar);  //monta o json do relatório
-
-                    using (MemoryStream ms = new MemoryStream())
-                    {
-                        switch (paramExtensao.ToLower().Trim())
-                        {
-                            case "pdf":
-                                report.ExportToPdf(ms);
-                                isPdf = true;
-                                break;
-                            case "docx":
-                                report.ExportToDocx(ms);
-                                break;
-                            case "xls":
-                                report.ExportToXls(ms);
-                                break;
-                            case "xlsx":
-                                report.ExportToXlsx(ms);
-                                break;
-                            case "rtf":
-                                report.ExportToRtf(ms);
-                                break;
-                            case "mht":
-                                report.ExportToMht(ms);
-                                break;
-                            case "html":
-                                report.ExportToHtml(ms);
-                                break;
-                            case "txt":
-                                report.ExportToText(ms);
-                                break;
-                            case "csv":
-                                report.ExportToCsv(ms);
-                                break;
-                            case "png":
-                                report.ExportToImage(ms, new ImageExportOptions() { Format = System.Drawing.Imaging.ImageFormat.Png });
-                                break;
-                        }
-
-                        if (!isPdf)
-                        {
-                            base64String = Convert.ToBase64String(ms.ToArray());
-                            listBase64String.Add(base64String);
-                        }
-                        else
-                        {
-                            pdf = PdfReader.Open(ms);
-                            listPdfs.Add(pdf);
-                        }
-                    }
-                }
-
-                if (isPdf)
-                    listBase64String.Add(Functions.mergePdf(listPdfs));
-
-                return Ok(listBase64String);
-            }
-            catch (Exception ex)
-            {
-                LoggerManager.getInstance().LogError($"Não foi possível gerar o arquivo -> Access: {_user.IdentityToken}");
-                return StatusCode(422, new { status = "failed", message = "Não foi possível gerar o arquivo" });
-            }
-            
-        }
-
-        [ApiExplorerSettings(IgnoreApi = true)]
-        [HttpPost("editar")]
-        public ActionResult GetReportDesignerModel()
-        {
-            string paramTipoImpressao = Functions.GetTextFromQueryParameter(Request.QueryString.ToString(), "tipoImpressao");  //tipo impressão sendo impressa
-
-            string modelJsonScript =
-                                new ReportDesignerClientSideModelGenerator(HttpContext.RequestServices)
-                                .GetJsonModelScript(
-                                    Request.QueryString.ToString(),                 // A URL de um relatório que é aberto no Report Designer quando o aplicativo é iniciado.
-                                    GetAvailableDataSources(paramTipoImpressao), //  Fontes de dados disponíveis no Report Designer que podem ser adicionadas aos relatórios.
-                                    "DXXRD",   // O caminho do URI do controlador padrão que processa solicitações do Report Designer.
-                                    "DXXRDV",// O caminho do URI do controlador padrão que processa solicitações do Web Document Viewer.
-                                    "DXXQB"      // O caminho do URI do controlador padrão que processa solicitações do Query Builder.
-                                );
-            return Content(modelJsonScript, "application/json");
-        }
-
-        Dictionary<string, object> GetAvailableDataSources(string tipoImpressao)
-        {
-            var dataSources = new Dictionary<string, object>();
-            ObjectDataSource ds = new ObjectDataSource();
-            ReportRepository.getInstance().SetDataSourceProps(ds, tipoImpressao);
-            dataSources.Add("DataModelSource", ds);
-            return dataSources;
-        }
-
-        /// <summary>
-        /// Registra na base o report enviado.
-        /// </summary>
-        [HttpPost("savePersonalizado")]
-        public async Task<IActionResult> Post([FromBody] dynamic data)
-        {
-            string parametros = data.GetProperty("param").ToString(); // data.param.Value;
-            string xmlReport = data.GetProperty("report").ToString(); //data.report.Value;
-
-            ReportRepository.getInstance().CreateOrUpdate(_user, xmlReport, parametros, true);
-
-            return Ok();
-        }
-    }
-
-
-}
+cachedFields: [
+  {
+    "campo": "Sequencial",
+    "titulo": "Sequencial",
+    "type": "number",
+    "selected": true
+  },
+  {
+    "campo": "CodigoVenda",
+    "titulo": "Código",
+    "type": "number",
+    "selected": false
+  },
+  {
+    "campo": "InCliente.CpfCnpj",
+    "titulo": "Cliente Cpf/Cnpj",
+    "type": "both",
+    "selected": false
+  },
+  {
+    "campo": "InCliente.RgIe",
+    "titulo": "Cliente RG/IE",
+    "type": "both",
+    "selected": false
+  },
+  {
+    "campo": "InCliente.NomeRazaoSocial",
+    "titulo": "Cliente Nome/Razão Social",
+    "type": "string",
+    "selected": false
+  },
+  {
+    "campo": "InCliente.ApelidoNomeFantasia",
+    "titulo": "Cliente Apelido/Nome fantasia",
+    "type": "string",
+    "selected": false
+  },
+  {
+    "campo": "DadosAdicionais",
+    "titulo": "Dados adicionais",
+    "type": "string",
+    "selected": false
+  },
+  {
+    "campo": "ObservacaoEntrega",
+    "titulo": "Observação entrega",
+    "type": "string",
+    "selected": false
+  },
+  {
+    "campo": "InVeiculo.Placa",
+    "titulo": "Placa veiculo",
+    "type": "string",
+    "selected": false
+  }
+]
